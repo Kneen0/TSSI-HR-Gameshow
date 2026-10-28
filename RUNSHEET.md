@@ -22,16 +22,16 @@ Remove silly names by clicking them. When the count stops rising, press **Next**
 
 ---
 
-## 5:00 – 13:00 · Round 1 — Lost in Translation (8 min)
-🎵 Whoosh + quirky xylophone jingle, then lobby music under the warm-up vote.
+## 5:00 – 13:00 · Round 1 — Play Your Cards Bright (8 min)
+🎵 Whoosh + swinging big-band jingle, then lobby music under the warm-up vote.
 
-**Intro (≈1 min)** — the screen shows the rules and opens a vote on phones: *Biscuit 🇬🇧, Cookie 🇺🇸, Keks 🇩🇪 or Galleta 🇨🇷?* (+50 pts just for voting)
-> *"Three countries, one language — allegedly. Before we start, let's settle the biggest debate in global HR: what is this? 🍪 Vote now — 50 points just for taking part!"*
-> React to the live bars: *"Cookie's winning… the Americans are mobilising!"*
+**Intro (≈1 min)** — vote on phones: *Which nation has the best poker face?* (+50 pts just for voting)
+> *"Good game, good game! It's time to PLAY YOUR CARDS BRIGHT! A row of giant cards — you tell me: is the next one HIGHER or LOWER? Get it right for 500 points, and keep a streak going for even more. Same card? SNAP — nobody scores!"*
 
-**9 questions × ~45 s** (including a Costa Rican one — *¡Pura vida!*) — 15 s to answer; it reveals automatically (early if everyone's in). 🎵 Thinking music, ticks in the last 5 s, buzzer at zero, *ding* on the reveal.
-- Read the fun fact on each reveal and shout out the ⚡ Fastest finger.
-- Good banter on Q2 (*"table that"*): *"UK and US colleagues — this is why your meetings go wrong!"*
+**2 rows × 6 calls (~25 s each)** — 10 s to call it; the big screen shows the live split (*"Look at that — the Americans are all going HIGHER!"*). Drumroll, flip, verdict.
+- Get the room shouting: *"Higher! Higher!"* / *"Lower! Lower!"*
+- Shout out the 🔥 streaks: *"Priya's on five in a row!"*
+- Ace first? *"Well, you'd be brave to go higher on that…"*
 
 **Leaderboard** 🎵 sting → *"After round one… and look at the Battle of the Nations!"*
 
