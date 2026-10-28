@@ -63,6 +63,30 @@ window.CONTENT = {
   },
 
   /* ---------------------------------------------------------------
+     GAME — PLAY YOUR CARDS BRIGHT  (higher or lower)
+     Cards are shuffled fresh for every show — nothing to prepare.
+     Points: 500 for a right call, +100 more for every call in a row
+     (500, 600, 700…). Same card value = "Snap!" — nobody scores.
+     --------------------------------------------------------------- */
+  cards: {
+    title: "Play Your Cards Bright",
+    tagline: "Higher! Lower! You decide!",
+    jingle: "cards",
+    rules: [
+      "A giant card is turned over on the big screen",
+      "Tap ⬆ HIGHER or ⬇ LOWER for the next card",
+      "Right = 500 pts, +100 for every call in a row 🔥"
+    ],
+    poll: {
+      q: "Which nation has the best poker face? 🃏",
+      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans", "🇨🇷 The Ticos"]
+    },
+    seconds: 10,
+    rows: 2,          // two rows ("hands") of cards
+    perRow: 7         // 7 cards = 6 calls per row
+  },
+
+  /* ---------------------------------------------------------------
      GAME 2 — THE PRICE IS BRIGHT  (closest without going over)
      Points: closest 1000, 2nd 600, 3rd 400; exact = 2000;
      anyone else under & within 25% = 200.
@@ -211,6 +235,7 @@ window.CONTENT = {
     ]
   },
 
-  /* Running order. Remove or reorder games here. */
-  order: ["translate", "price", "derby", "fortunes"]
+  /* Running order. Remove or reorder games here.
+     "translate" (Lost in Translation) is still available — add it back to use it. */
+  order: ["cards", "price", "derby", "fortunes"]
 };

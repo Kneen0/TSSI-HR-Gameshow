@@ -88,5 +88,23 @@ window.U = (function () {
     }).join("") + '<div class="nnote">Average points per player — so every nation can win</div></div>';
   }
 
-  return { esc, $, flag, fmt, num, parseNum, uid, roomCode, norm, matchSurvey, ranked, countryTable, countryBars };
+  /* ---- playing cards (Play Your Cards Bright) ---- */
+  const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+  const RANK_NAMES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
+  const SUITS = ["♠", "♥", "♦", "♣"];
+  /* deals `rows` rows of `per` cards from one shuffled 52-card deck; a card is [rank 0-12, suit 0-3] */
+  function deal(rows, per) {
+    const d = [];
+    for (let r = 0; r < 13; r++) for (let s = 0; s < 4; s++) d.push([r, s]);
+    for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; }
+    return Array.from({ length: rows }, (_, r) => d.slice(r * per, r * per + per));
+  }
+  const cardName = (c) => RANK_NAMES[c[0]] + " of " + ["Spades", "Hearts", "Diamonds", "Clubs"][c[1]];
+  function cardHtml(c, cls) {
+    if (!c) return `<div class="pcard back ${cls || ""}"><i></i></div>`;
+    const red = c[1] === 1 || c[1] === 2;
+    return `<div class="pcard face ${red ? "red" : ""} ${cls || ""}" aria-label="${cardName(c)}"><span class="cr">${RANKS[c[0]]}<br>${SUITS[c[1]]}</span><span class="cs">${SUITS[c[1]]}</span><span class="cr cr2">${RANKS[c[0]]}<br>${SUITS[c[1]]}</span></div>`;
+  }
+
+  return { esc, $, flag, fmt, num, parseNum, uid, deal, cardHtml, cardName, RANK_NAMES, roomCode, norm, matchSurvey, ranked, countryTable, countryBars };
 })();

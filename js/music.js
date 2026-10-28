@@ -128,6 +128,14 @@ window.Music = (function () {
       drums(d, t, bpm, "k...s...k.k.s...", 3, 0.7);
       return 14 * 60 / bpm;
     },
+    cards(d, t) { // swinging Saturday-night big band
+      const bpm = 168, sw = { type: "sawtooth", vol: 0.07, lp: 2800 };
+      line(d, t, bpm, "C3:1 E3:1 G3:1 A3:1 Bb3:1 A3:1 G3:1 E3:1 F3:1 A3:1 C4:1 D4:1 C3:1 G2:1 C3:2", { type: "triangle", vol: 0.3 });
+      line(d, t, bpm, "-:0.66 E5+G5+C6:0.34 -:1 -:0.66 E5+G5+C6:0.34 -:1 -:0.66 E5+G5+Bb5:0.34 -:1 -:0.66 E5+G5+Bb5:0.34 -:1 -:0.66 F5+A5+C6:0.34 -:1 -:0.66 F5+A5+D6:0.34 -:1 G5+C6+E6:0.66 G5+B5+D6:0.34 C5+E5+G5+C6:2", sw);
+      line(d, t, bpm, "G5:0.66 A5:0.34 C6:1 A5:0.66 G5:0.34 E5:1 G5:0.66 A5:0.34 Bb5:1 A5:0.66 G5:0.34 E5:1 F5:0.66 G5:0.34 A5:1 C6:0.66 D6:0.34 E6:1 D6:0.66 B5:0.34 C6:3", { type: "square", vol: 0.06, lp: 3200 });
+      drums(d, t, bpm, "k..hs..hk..hs.hh", 4, 0.9);
+      return 16 * 60 / bpm;
+    },
     price(d, t) { // brassy showtime
       const bpm = 140, o = { type: "sawtooth", vol: 0.07, lp: 2600 };
       line(d, t, bpm, "C4:0.25 D4:0.25 E4:0.25 F4:0.25 G4:0.25 A4:0.25 B4:0.25 C5:0.25 E5+G5+C6:1.5 -:0.5 D5+F5+Bb5:0.5 E5+G5+C6:0.5 -:0.5 F5+A5+D6:1 E5+G5+C6:0.5 D5+G5+B5:0.5 E5+G5+C6:3", o);

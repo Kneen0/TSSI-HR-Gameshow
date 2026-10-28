@@ -232,6 +232,23 @@
         renderBody();
       }));
     }
+    else if (k === "q" && g === "cards") {
+      const call = local.v === 1 ? "⬆ HIGHER" : local.v === 0 ? "⬇ LOWER" : "";
+      b.innerHTML = `${timerBar()}<div class="card center"><div class="tag">Row ${v.row}/${v.rows} · card ${v.call}/${v.calls}</div>
+        <div class="minirow">${v.shown.map((c, j) => U.cardHtml(c, j === v.shown.length - 1 ? "cur" : "done")).join("")}${U.cardHtml(null, "next")}</div>
+        <h3>Higher or lower than the <b>${esc(U.RANK_NAMES[v.cur[0]])}</b>?</h3></div>
+        <div class="hlbtns">
+          <button class="hlbtn up lockable${local.v === 1 ? " on" : ""}" data-v="1" ${local.v != null ? "disabled" : ""}>⬆<br>HIGHER</button>
+          <button class="hlbtn down lockable${local.v === 0 ? " on" : ""}" data-v="0" ${local.v != null ? "disabled" : ""}>⬇<br>LOWER</button>
+        </div>
+        <p class="hint center" id="lockMsg">${call ? `🔒 Locked in: ${call}` : "Same value = nobody scores. Choose wisely!"}</p>`;
+      b.querySelectorAll(".hlbtn").forEach((btn) => (btn.onclick = () => {
+        if (local.v != null) return;
+        local.v = +btn.dataset.v; saveLocal(); send({ t: "answer", v: local.v }); beep("pop");
+        b.querySelectorAll(".hlbtn").forEach((x) => { x.disabled = true; x.classList.toggle("on", x === btn); });
+        $("#lockMsg").textContent = `🔒 Locked in: ${local.v === 1 ? "⬆ HIGHER" : "⬇ LOWER"}`;
+      }));
+    }
     else if (k === "q" && g === "translate") {
       b.innerHTML = `${timerBar()}<div class="card"><div class="tag">Question ${v.n}/${v.of}</div><h3>${esc(v.q)}</h3></div>
         <div class="abcd">${v.options.map((o, i) => `<button class="abtn a${i} lockable${local.v === i ? " on" : ""}" data-i="${i}" ${local.v != null ? "disabled" : ""}><b>${"ABCD"[i]}</b><span>${esc(o)}</span></button>`).join("")}</div>
@@ -281,6 +298,16 @@
     else if (k === "reveal") {
       let inner = "";
       const my = local.prev || {};
+      if (g === "cards") {
+        const mine = my.v === 1 ? "⬆ HIGHER" : my.v === 0 ? "⬇ LOWER" : null;
+        const right = v.res >= 0 && my.v === v.res;
+        const st = (v.streak || {})[me.id];
+        inner = `<div class="tag">Row ${v.row} · card ${v.call + 1}</div>
+          <div class="minirow">${U.cardHtml(v.cur, "cur")}${U.cardHtml(v.next, "cur reveal")}</div>
+          <div class="answer">${v.res === 1 ? "⬆ HIGHER!" : v.res === 0 ? "⬇ LOWER!" : "🫰 SNAP! Same value"}</div>
+          <p class="verdict">${mine == null ? "You didn't call it." : right ? `✅ You said ${mine}` : `❌ You said ${mine}`}</p>
+          ${st >= 2 ? `<p class="streak">🔥 ${st} in a row!</p>` : ""}`;
+      }
       if (g === "translate") inner = `<div class="tag">Question ${v.n}/${v.of}</div><h3>${esc(v.q)}</h3><div class="answer">✅ ${esc(v.options[v.answer])}</div>
         <p class="verdict">${my.v == null ? "You didn't answer." : my.v === v.answer ? "You got it! 🎉" : "❌ You said: " + esc(v.options[my.v])}</p><p class="hint">💡 ${esc(v.fact)}</p>`;
       if (g === "price") inner = `<div class="tag">Item ${v.n}/${v.of}</div><div class="big">${v.emoji}</div><h3>${esc(v.name)}</h3><div class="answer">${esc(v.currency)}${num(v.answer)}</div>

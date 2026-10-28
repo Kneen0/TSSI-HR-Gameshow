@@ -7,7 +7,7 @@
   const C = window.CONTENT, CFG = window.TSSI_CONFIG || {};
   const { esc, $, flag, fmt, num, ranked, countryBars, matchSurvey } = U;
   const stage = $("#stage");
-  const PLAN = { lobby: 5, translate: 8, price: 9, derby: 10, fortunes: 10, final: 3 }; // minutes (45 total)
+  const PLAN = { lobby: 5, cards: 8, translate: 8, price: 9, derby: 10, fortunes: 10, final: 3 }; // minutes (45 total)
   const RACE_LEN = 1300;
   const FINAL_REVEAL_MS = 8700;
 
@@ -25,6 +25,7 @@
     const s = [{ k: "lobby" }];
     C.order.forEach((g) => {
       s.push({ k: "intro", g });
+      if (g === "cards") for (let i = 0; i < C.cards.rows * (C.cards.perRow - 1); i++) s.push({ k: "q", g, i }, { k: "reveal", g, i });
       if (g === "translate") C.translate.questions.forEach((_, i) => s.push({ k: "q", g, i }, { k: "reveal", g, i }));
       if (g === "price") C.price.items.forEach((_, i) => s.push({ k: "q", g, i }, { k: "reveal", g, i }));
       if (g === "derby") for (let r = 0; r < C.derby.races; r++) s.push({ k: "pick", g, i: r }, { k: "race", g, i: r }, { k: "result", g, i: r });
@@ -47,7 +48,10 @@
   }
   const cur = () => steps[S.step];
   const game = () => C[cur().g];
-  const qCount = (g) => (g === "price" ? C.price.items.length : C[g].questions.length);
+  const qCount = (g) => (g === "price" ? C.price.items.length : g === "cards" ? C.cards.rows * (C.cards.perRow - 1) : C[g].questions.length);
+  /* cards: step index → [row, position of the current card in that row] */
+  const cardPos = (i) => [Math.floor(i / (C.cards.perRow - 1)), i % (C.cards.perRow - 1)];
+  const ensureDeck = () => { if (!S.deck) { S.deck = U.deal(C.cards.rows, C.cards.perRow); S.streak = {}; } };
   const pname = (id) => (S.players[id] ? S.players[id].name : "");
   const pflag = (id) => flag(S.players[id] && S.players[id].country);
 
@@ -77,6 +81,7 @@
       S.poll[m.id] = v; updatePoll(); save(); pubSoon();
     }
     if (m.t === "answer" && st.k === "q" && open && !S.scored[S.step + 1]) {
+      if (st.g === "cards" && !S.ans[m.id]) { const v = +m.v; if (v === 0 || v === 1) S.ans[m.id] = { v, at: Date.now() }; }
       if (st.g === "translate" && !S.ans[m.id]) {
         const v = +m.v; if (v >= 0 && v < 4) S.ans[m.id] = { v, at: Date.now() };
       }
@@ -111,6 +116,13 @@
       if (st.g === "translate") { const q = g.questions[st.i]; view = { q: q.q, options: q.options }; if (st.k === "reveal") Object.assign(view, { answer: q.answer, fact: q.fact }); }
       if (st.g === "price") { const it = g.items[st.i]; view = { emoji: it.emoji, name: it.name, detail: it.detail, currency: it.currency }; if (st.k === "reveal") Object.assign(view, { answer: it.answer, fact: it.fact }); }
       if (st.g === "fortunes") { const q = g.questions[st.i]; view = { q: q.q, max: g.maxAnswers }; if (st.k === "reveal") view.answers = q.answers.map((a) => ({ text: a.text, pts: a.pts })); }
+      if (st.g === "cards") {
+        ensureDeck();
+        const [r, c] = cardPos(st.i), row = S.deck[r];
+        view = { row: r + 1, rows: g.rows, call: c + 1, calls: g.perRow - 1, cur: row[c], shown: row.slice(0, c + 1) };
+        if (st.k === "q") view.split = cardSplit();
+        if (st.k === "reveal") { const sn = S.snap[S.step] || {}; Object.assign(view, { next: row[c + 1], res: sn.res, split: sn.counts, streak: sn.streaks || {} }); }
+      }
       view.n = st.i + 1; view.of = qCount(st.g);
     }
     if (st.k === "pick" || st.k === "race" || st.k === "result") {
@@ -173,8 +185,10 @@
     S.deadline = 0; S.holdUntil = 0; S.allIn = false; lastSec = -1;
     S.deltas = (S.snap[S.step] && S.snap[S.step].deltas) || {};
     if (st.k === "intro") S.poll = {};
+    if (st.g === "cards") ensureDeck();
     if (st.k === "q") { S.ans = {}; S.qStart = Date.now(); S.deadline = S.qStart + game().seconds * 1000; }
     if (st.k === "pick") { S.picks = {}; S.cheers = {}; S.race = null; S.deadline = Date.now() + C.derby.pickSeconds * 1000; }
+    if (st.k === "reveal" && st.g === "cards") S.holdUntil = Date.now() + 1100;
     if (st.k === "reveal" && st.g === "price") S.holdUntil = Date.now() + 2400;
     if (st.k === "reveal" && st.g === "fortunes") S.holdUntil = Date.now() + 1200 + game().questions[st.i].answers.length * 900;
     if (st.k === "final") S.holdUntil = Date.now() + FINAL_REVEAL_MS + 300;
@@ -321,6 +335,16 @@
     const st = cur(), g = game();
     Music.play("think", true);
     let body = "";
+    if (st.g === "cards") {
+      const [r, c] = cardPos(st.i), row = S.deck[r];
+      body = `<div class="cardrow">${row.map((cd, j) => (j <= c ? U.cardHtml(cd, j === c ? "cur" : "done") : U.cardHtml(null, j === c + 1 ? "next" : ""))).join("")}</div>
+        <h2 class="qtext">Higher or lower than the <b class="hl-card">${esc(U.RANK_NAMES[row[c][0]])}</b>?</h2>
+        <div class="hl">
+          <div class="hlbox higher"><b>⬆ HIGHER</b><span class="hlbar"><i id="hiBar"></i></span><span id="hiN" class="hln">0</span></div>
+          <div class="hlbox lower"><b>⬇ LOWER</b><span class="hlbar"><i id="loBar"></i></span><span id="loN" class="hln">0</span></div>
+        </div>`;
+      later(() => Music.sfx("whoosh"), 50);
+    }
     if (st.g === "translate") {
       const q = g.questions[st.i];
       body = `<h2 class="qtext">${esc(q.q)}</h2><div class="opts">${q.options.map((o, i) => `<div class="opt o${i}"><span class="ol">${"ABCD"[i]}</span><span class="otext">${esc(o)}</span></div>`).join("")}</div>`;
@@ -345,6 +369,29 @@
     if (!S.scored[S.step]) { S.scored[S.step] = true; S.deltas = {}; S.snap[S.step] = scoreStep(st); S.snap[S.step].deltas = S.deltas; save(); }
     const sn = S.snap[S.step] || { deltas: {} }; // (older saves may lack a snapshot)
     const label = `${esc(g.title)} · ${st.i + 1}/${qCount(st.g)}`;
+    if (st.g === "cards") {
+      const [r, c] = cardPos(st.i), row = S.deck[r], res = sn.res;
+      const lo = (sn.counts || [0, 0])[0], hi = (sn.counts || [0, 0])[1], tot = Math.max(1, lo + hi);
+      const verdict = res === 1 ? "⬆ HIGHER!" : res === 0 ? "⬇ LOWER!" : "🫰 SNAP! Same value — the house wins!";
+      const fire = Object.entries(sn.streaks || {}).filter(([id, n]) => n >= 3 && S.players[id]).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      stage.innerHTML = `<div class="question">${head(`${esc(g.title)} · Row ${r + 1}, card ${c + 2}`)}
+        <div class="cardrow">${row.map((cd, j) => (j <= c ? U.cardHtml(cd, j === c ? "cur" : "done") : j === c + 1 ? `<div class="flipper" id="flipper">${U.cardHtml(null, "next")}</div>` : U.cardHtml(null, ""))).join("")}</div>
+        <div id="cres" class="cres hidden">
+          <div class="verdict-big ${res === 1 ? "up" : res === 0 ? "down" : "snap"}">${verdict}</div>
+          <div class="hl small">
+            <div class="hlbox higher ${res === 1 ? "win" : ""}"><b>⬆ HIGHER</b><span class="hlbar"><i style="width:${(hi / tot) * 100}%"></i></span><span class="hln">${hi}</span></div>
+            <div class="hlbox lower ${res === 0 ? "win" : ""}"><b>⬇ LOWER</b><span class="hlbar"><i style="width:${(lo / tot) * 100}%"></i></span><span class="hln">${lo}</span></div>
+          </div>
+          ${fire.length ? `<div class="shout">🔥 On fire: ${fire.map(([id, n]) => `${pflag(id)} <b>${esc(pname(id))}</b> (${n} in a row)`).join(" · ")}</div>` : ""}
+          ${miniBoard()}
+        </div></div>`;
+      Music.sfx("drumroll");
+      later(() => {
+        const f = $("#flipper"); if (f) { f.innerHTML = U.cardHtml(row[c + 1], "flip reveal"); }
+        const cr = $("#cres"); if (cr) cr.classList.remove("hidden");
+        Music.sfx(res === -1 ? "buzz" : "ding"); if (res !== -1) Music.sfx("applause");
+      }, 1000);
+    }
     if (st.g === "translate") {
       const q = g.questions[st.i], c = sn.counts || [0, 0, 0, 0], max = Math.max(1, ...c);
       stage.innerHTML = `<div class="question">${head(label)}
@@ -405,6 +452,21 @@
         if (!best || a.at < best.at) best = { id, at: a.at };
       });
       sn.counts = counts; sn.fastest = best && best.id;
+    }
+    if (st.g === "cards") {
+      ensureDeck();
+      const [r, c] = cardPos(st.i), row = S.deck[r];
+      const res = row[c + 1][0] > row[c][0] ? 1 : row[c + 1][0] < row[c][0] ? 0 : -1;
+      if (c === 0) S.streak = {};                       // streaks restart with each new row
+      const counts = [0, 0];
+      Object.keys(S.players).forEach((id) => {
+        const a = S.ans[id];
+        if (a) counts[a.v]++;
+        if (res >= 0 && a && a.v === res) { S.streak[id] = (S.streak[id] || 0) + 1; addPoints(id, 400 + 100 * S.streak[id], st.g); }
+        else S.streak[id] = 0;
+      });
+      sn.res = res; sn.counts = counts;
+      sn.streaks = Object.fromEntries(Object.entries(S.streak).filter(([, n]) => n >= 2));
     }
     if (st.g === "price") {
       const ans = g.items[st.i].answer;
@@ -621,7 +683,7 @@
       </div>
       <div id="finalExtra" class="hidden">
         ${champ ? `<div class="champ">Nation champions: ${champ.flag} <b>${esc(champ.name)}</b>!</div>` : ""}
-        <div class="awards">${award("translate", "Polyglot Prize", "🗣️")}${award("price", "Bargain Hunter", "🏷️")}${award("derby", "Lucky Punter", "🏇")}${award("fortunes", "Survey Whisperer", "📋")}</div>
+        <div class="awards">${C.order.map((g) => award(g, ...({ cards: ["Card Sharp", "🃏"], translate: ["Polyglot Prize", "🗣️"], price: ["Bargain Hunter", "🏷️"], derby: ["Lucky Punter", "🏇"], fortunes: ["Survey Whisperer", "📋"] }[g] || [C[g].title, "⭐"]))).join("")}</div>
         <p class="thanks">Thank you · Danke · ¡Gracias! · Thanks y'all! 👋</p>
       </div></div>`;
     const show = (i, d) => later(() => { const el = stage.querySelector(`.pod[data-r="${i}"]`); if (el) { el.classList.remove("hidden"); Music.sfx("ding"); } }, d);
@@ -662,6 +724,7 @@
   }
 
   /* ---------------- live bits: timer, counts, clock ---------------- */
+  function cardSplit() { const c = [0, 0]; Object.values(S.ans).forEach((a) => { if (a.v === 0 || a.v === 1) c[a.v]++; }); return c; }
   function updateCounts() {
     const n = Object.keys(S.players).length;
     document.querySelectorAll("#pcount,#pcount2,#ctlPlayers").forEach((el) => (el.textContent = n));
@@ -669,6 +732,13 @@
     const st = cur();
     const ac = $("#acount");
     if (ac) ac.textContent = st.k === "pick" ? Object.keys(S.picks).length : Object.keys(S.ans).length;
+    if (st.k === "q" && st.g === "cards") {
+      const [lo, hi] = cardSplit(), tot = Math.max(1, lo + hi);
+      const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+      set("#hiN", hi); set("#loN", lo);
+      const hb = $("#hiBar"), lb = $("#loBar");
+      if (hb) hb.style.width = (hi / tot) * 100 + "%"; if (lb) lb.style.width = (lo / tot) * 100 + "%";
+    }
     const nc = $("#nationCount");
     if (nc) {
       const t = {}; Object.values(S.players).forEach((p) => (t[p.country] = (t[p.country] || 0) + 1));
@@ -719,7 +789,7 @@
     const sel = $("#ctlJump");
     sel.innerHTML = steps.map((s, i) => {
       const g = s.g ? C[s.g].title : "";
-      const lbl = { lobby: "Lobby", intro: "▶ " + g, q: `    Q${s.i + 1}`, reveal: `    Q${s.i + 1} reveal`, pick: `    Race ${s.i + 1} betting`, race: `    Race ${s.i + 1}`, result: `    Race ${s.i + 1} result`, board: "    ★ Leaderboard", final: "🏆 Grand finale" }[s.k];
+      const lbl = { lobby: "Lobby", intro: "▶ " + g, q: s.g === "cards" ? `    Row ${cardPos(s.i)[0] + 1} · card ${cardPos(s.i)[1] + 1}` : `    Q${s.i + 1}`, reveal: s.g === "cards" ? `    Row ${cardPos(s.i)[0] + 1} · flip ${cardPos(s.i)[1] + 2}` : `    Q${s.i + 1} reveal`, pick: `    Race ${s.i + 1} betting`, race: `    Race ${s.i + 1}`, result: `    Race ${s.i + 1} result`, board: "    ★ Leaderboard", final: "🏆 Grand finale" }[s.k];
       return `<option value="${i}">${esc(lbl)}</option>`;
     }).join("");
     const unfocus = () => document.activeElement && document.activeElement.blur && document.activeElement.blur();
