@@ -59,6 +59,22 @@ With `js/config.js` left blank the game runs in **demo mode**: host and players 
 2. On the new repo page click **uploading an existing file**, drag in *everything* from this folder (keep the `js`, `css`, `supabase` folders) → **Commit changes**.
 
 ### Step 2 — Supabase (makes it real-time across countries)
+
+> ✅ **Already done for TSSI.** The project exists and `js/config.js` is filled in:
+>
+> | | |
+> |---|---|
+> | Project URL | `https://dcmdevqwdeumqvjsnsia.supabase.co` |
+> | Project ref | `dcmdevqwdeumqvjsnsia` |
+> | Dashboard | https://supabase.com/dashboard/project/dcmdevqwdeumqvjsnsia |
+> | Public (anon) key | in `js/config.js` — safe to publish |
+> | Secret (service_role) key | **not stored anywhere in this repo — keep it that way** |
+>
+> Remaining one-off steps in the dashboard: check **Realtime → Settings → "Allow public access to channels"** is enabled, and run `supabase/schema.sql` in the **SQL Editor** if you want the monthly results saved.
+
+⛔ **Never put the secret / service_role key in `config.js`, the README or anywhere on GitHub/Netlify.** Everything in this repo is downloaded by every player's browser, and that key bypasses all database security. The game doesn't need it. If it's ever been pasted somewhere public, rotate it in **Project Settings → API Keys**.
+
+Setting up a *new* project (e.g. for another team):
 1. Sign in at supabase.com → **New project** → pick a region near most players (e.g. London `eu-west-2`) → set a database password → create. Free plan is fine (see sizing below).
 2. **Project Settings → API** (or **API Keys**). Copy:
    - the **Project URL** (`https://xxxx.supabase.co`)
@@ -73,6 +89,8 @@ SUPABASE_ANON_KEY: "eyJhbGciOi...or sb_publishable_...",
 ```
 
 The anon/publishable key is designed to be public, so it's safe in this file. The game only uses Realtime broadcast; the optional results table only allows *inserts* from the public key.
+
+**Check the key works:** open the Netlify site's `host.html` and start a room. The control bar should show **🟢 Live** with no ⚠️ warning next to the room code, and a phone joining from mobile data should pop into the lobby. If you see ⚠️ or players get stuck on "Connecting…", re-copy the anon key from the dashboard into `config.js` — one mistyped character breaks it.
 
 ### Step 3 — Netlify (puts it on the web)
 1. Sign in at netlify.com → **Add new site → Import an existing project → GitHub** → choose `tssi-gameshow`.
