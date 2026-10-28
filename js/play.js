@@ -266,7 +266,7 @@
         ${full ? `<p class="center" id="lockMsg">🔒 Answers locked in! Wait for the reveal…</p>` : `
         <form id="fForm"><input id="fIn" class="lockable" maxlength="40" placeholder="Answer ${list.length + 1} of ${v.max}" autocomplete="off" enterkeyhint="send">
         <div class="row"><button id="fGo" type="submit" class="btn lockable">Add answer</button>${list.length ? `<button id="fDone" type="button" class="btn ghost lockable">I'm done</button>` : ""}</div></form>
-        <p class="hint" id="lockMsg">English or Deutsch — small typos are OK.</p>`}</div>`;
+        <p class="hint" id="lockMsg">English, Deutsch or Español — small typos are OK.</p>`}</div>`;
       if (!full) {
         $("#fForm").onsubmit = (e) => {
           e.preventDefault();
@@ -337,7 +337,7 @@
       const r = myRank();
       b.innerHTML = `<div class="card center">${k === "final" ? "<h2>🏆 Final results!</h2>" : `<div class="tag">After ${esc(S.gameTitle || "")}</div>`}
         <div class="myrank">#${r.rank}<small> of ${r.of}</small></div><p>${fmt(r.score)} points</p></div><div class="card">${boardHtml()}</div>
-        ${k === "final" ? '<p class="center thanks-p">Thank you · Danke · Thanks y\'all! 👋</p>' : ""}`;
+        ${k === "final" ? '<p class="center thanks-p">Thank you · Danke · ¡Gracias! · Thanks y\'all! 👋</p>' : ""}`;
     }
     timerTick();
   }

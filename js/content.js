@@ -9,6 +9,7 @@ window.CONTENT = {
     { id: "UK", flag: "🇬🇧", name: "UK" },
     { id: "US", flag: "🇺🇸", name: "US" },
     { id: "DE", flag: "🇩🇪", name: "Germany" },
+    { id: "CR", flag: "🇨🇷", name: "Costa Rica" },
     { id: "XX", flag: "🌍", name: "Elsewhere" }
   ],
 
@@ -18,16 +19,16 @@ window.CONTENT = {
      --------------------------------------------------------------- */
   translate: {
     title: "Lost in Translation",
-    tagline: "Three countries. One language. Allegedly.",
+    tagline: "Four countries. One language. Allegedly.",
     jingle: "translate",
     rules: [
-      "A word or phrase from 🇬🇧 🇺🇸 or 🇩🇪 pops up",
+      "A word or phrase from 🇬🇧 🇺🇸 🇩🇪 or 🇨🇷 pops up",
       "Tap the right meaning on your phone",
       "Right answer = 500 pts, plus up to 500 for speed"
     ],
     poll: {
       q: "Settle this once and for all — what is this? 🍪",
-      options: ["Biscuit 🇬🇧", "Cookie 🇺🇸", "Keks 🇩🇪"]
+      options: ["Biscuit 🇬🇧", "Cookie 🇺🇸", "Keks 🇩🇪", "Galleta 🇨🇷"]
     },
     seconds: 15,
     questions: [
@@ -43,6 +44,9 @@ window.CONTENT = {
       { q: "What does the German word “Feierabend” mean?",
         options: ["The office Christmas party", "Clocking off at the end of the working day", "A fire drill", "An annual bonus"], answer: 1,
         fact: "Literally “celebration evening” — the sacred moment the working day ends." },
+      { q: "A Costa Rican colleague answers “How are you?” with “¡Pura vida!”. What do they mean?",
+        options: ["All good — life's great!", "I'm drinking pure juice", "I'm off on holiday", "The meeting's cancelled"], answer: 0,
+        fact: "“Pure life” — Costa Rica's national motto. It means hello, goodbye, thanks and “all good” all at once." },
       { q: "A Brit books “a fortnight” of annual leave. How long are they away?",
         options: ["4 days", "A long weekend", "14 days", "40 nights"], answer: 2,
         fact: "From Old English “fourteen nights”. Most Americans have heard it — few say it." },
@@ -76,7 +80,7 @@ window.CONTENT = {
     ],
     poll: {
       q: "Which nation has the best bargain hunters?",
-      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans"]
+      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans", "🇨🇷 The Ticos"]
     },
     seconds: 25,
     items: [
@@ -118,7 +122,7 @@ window.CONTENT = {
     ],
     poll: {
       q: "Which is the greatest horse race on earth?",
-      options: ["🇬🇧 Royal Ascot", "🇺🇸 Kentucky Derby", "🇩🇪 Deutsches Derby"]
+      options: ["🇬🇧 Royal Ascot", "🇺🇸 Kentucky Derby", "🇩🇪 Deutsches Derby", "🇨🇷 El Tope, San José"]
     },
     pickSeconds: 20,
     races: 2,
@@ -157,51 +161,51 @@ window.CONTENT = {
     tagline: "We asked 100 colleagues… Survey says!",
     jingle: "fortunes",
     rules: [
-      "We surveyed colleagues across 🇬🇧 🇺🇸 🇩🇪",
-      "Type up to 3 answers (English or Deutsch!)",
+      "We surveyed colleagues across 🇬🇧 🇺🇸 🇩🇪 🇨🇷",
+      "Type up to 3 answers — English, Deutsch or Español!",
       "Score 10 pts for every person who said it"
     ],
     poll: {
       q: "Survey says… what's the ultimate lunch?",
-      options: ["🇬🇧 Fish & chips", "🇺🇸 Burger", "🇩🇪 Currywurst"]
+      options: ["🇬🇧 Fish & chips", "🇺🇸 Burger", "🇩🇪 Currywurst", "🇨🇷 Casado"]
     },
     seconds: 40,
     maxAnswers: 3,
     questions: [
       { q: "Name something people do on their lunch break",
         answers: [
-          { text: "Eat", pts: 28, aliases: ["eat", "eating", "lunch", "food", "sandwich", "essen", "mittagessen", "snack"] },
-          { text: "Scroll their phone", pts: 20, aliases: ["phone", "scroll", "social media", "instagram", "tiktok", "handy", "browse", "internet"] },
-          { text: "Go for a walk", pts: 16, aliases: ["walk", "walking", "stroll", "fresh air", "spazieren", "spaziergang", "outside"] },
-          { text: "Exercise / gym", pts: 12, aliases: ["gym", "exercise", "run", "running", "workout", "sport", "yoga", "fitness"] },
-          { text: "Keep working", pts: 10, aliases: ["work", "working", "emails", "email", "keep working", "arbeiten", "desk"] },
-          { text: "Nap", pts: 6, aliases: ["nap", "sleep", "snooze", "rest", "schlafen", "power nap"] }
+          { text: "Eat", pts: 28, aliases: ["eat", "eating", "lunch", "food", "sandwich", "essen", "mittagessen", "snack", "comer", "almuerzo", "almorzar"] },
+          { text: "Scroll their phone", pts: 20, aliases: ["phone", "scroll", "social media", "instagram", "tiktok", "handy", "browse", "internet", "celular", "telefono"] },
+          { text: "Go for a walk", pts: 16, aliases: ["walk", "walking", "stroll", "fresh air", "spazieren", "spaziergang", "outside", "caminar", "paseo", "caminata"] },
+          { text: "Exercise / gym", pts: 12, aliases: ["gym", "exercise", "run", "running", "workout", "sport", "yoga", "fitness", "gimnasio", "ejercicio", "correr"] },
+          { text: "Keep working", pts: 10, aliases: ["work", "working", "emails", "email", "keep working", "arbeiten", "desk", "trabajar", "correos"] },
+          { text: "Nap", pts: 6, aliases: ["nap", "sleep", "snooze", "rest", "schlafen", "power nap", "siesta", "dormir"] }
         ] },
       { q: "Name a reason a meeting runs over",
         answers: [
-          { text: "Tech problems", pts: 25, aliases: ["tech", "technology", "it", "wifi", "internet", "audio", "mute", "teams", "zoom", "connection", "laptop", "technik"] },
-          { text: "Someone talks too much", pts: 22, aliases: ["talk", "talking", "talks too much", "waffle", "rambling", "chatty", "long winded", "monologue", "reden"] },
-          { text: "Started late", pts: 18, aliases: ["late", "started late", "late start", "lateness", "people late", "spaet", "verspaetung"] },
-          { text: "No agenda", pts: 14, aliases: ["agenda", "no agenda", "no plan", "unprepared", "disorganised", "disorganized", "tagesordnung"] },
+          { text: "Tech problems", pts: 25, aliases: ["tech", "technology", "it", "wifi", "internet", "audio", "mute", "teams", "zoom", "connection", "laptop", "technik", "tecnologia", "problemas tecnicos"] },
+          { text: "Someone talks too much", pts: 22, aliases: ["talk", "talking", "talks too much", "waffle", "rambling", "chatty", "long winded", "monologue", "reden", "hablar mucho", "hablan mucho"] },
+          { text: "Started late", pts: 18, aliases: ["late", "started late", "late start", "lateness", "people late", "spaet", "verspaetung", "tarde", "llegar tarde"] },
+          { text: "No agenda", pts: 14, aliases: ["agenda", "no agenda", "no plan", "unprepared", "disorganised", "disorganized", "tagesordnung", "sin agenda"] },
           { text: "Going off topic", pts: 11, aliases: ["off topic", "tangent", "distracted", "small talk", "chit chat", "sidetracked"] },
           { text: "Too many people", pts: 5, aliases: ["too many people", "too many attendees", "big group", "everyone invited"] }
         ] },
       { q: "Name something you'd find on every office desk",
         answers: [
-          { text: "Computer / laptop", pts: 30, aliases: ["computer", "laptop", "pc", "monitor", "screen", "keyboard", "mouse", "rechner", "bildschirm"] },
-          { text: "Mug / cup", pts: 24, aliases: ["mug", "cup", "coffee", "tea", "tasse", "kaffee", "becher", "water bottle", "bottle"] },
-          { text: "Pen", pts: 15, aliases: ["pen", "pencil", "biro", "stift", "kuli", "kugelschreiber"] },
-          { text: "Notepad", pts: 12, aliases: ["notepad", "notebook", "paper", "post it", "post its", "sticky notes", "notizblock", "block", "pad"] },
-          { text: "Phone", pts: 8, aliases: ["phone", "telephone", "mobile", "handy", "telefon", "headset"] },
-          { text: "Plant", pts: 6, aliases: ["plant", "plants", "cactus", "pflanze", "flower", "succulent"] }
+          { text: "Computer / laptop", pts: 30, aliases: ["computer", "laptop", "pc", "monitor", "screen", "keyboard", "mouse", "rechner", "bildschirm", "computadora", "ordenador", "portatil", "pantalla"] },
+          { text: "Mug / cup", pts: 24, aliases: ["mug", "cup", "coffee", "tea", "tasse", "kaffee", "becher", "water bottle", "bottle", "taza", "botella"] },
+          { text: "Pen", pts: 15, aliases: ["pen", "pencil", "biro", "stift", "kuli", "kugelschreiber", "lapicero", "boligrafo", "pluma", "lapiz"] },
+          { text: "Notepad", pts: 12, aliases: ["notepad", "notebook", "paper", "post it", "post its", "sticky notes", "notizblock", "block", "pad", "cuaderno", "libreta", "papel"] },
+          { text: "Phone", pts: 8, aliases: ["phone", "telephone", "mobile", "handy", "telefon", "headset", "celular", "telefono"] },
+          { text: "Plant", pts: 6, aliases: ["plant", "plants", "cactus", "pflanze", "flower", "succulent", "planta"] }
         ] },
       { q: "Name a word HR people say all the time",
         answers: [
-          { text: "Policy", pts: 26, aliases: ["policy", "policies", "richtlinie", "procedure"] },
-          { text: "Wellbeing", pts: 20, aliases: ["wellbeing", "well being", "wellness", "mental health", "self care"] },
-          { text: "Engagement", pts: 16, aliases: ["engagement", "engaged", "employee engagement"] },
-          { text: "Process", pts: 12, aliases: ["process", "processes", "prozess", "workflow"] },
-          { text: "Onboarding", pts: 9, aliases: ["onboarding", "on boarding", "induction", "new starter", "new hire"] },
+          { text: "Policy", pts: 26, aliases: ["policy", "policies", "richtlinie", "procedure", "politica"] },
+          { text: "Wellbeing", pts: 20, aliases: ["wellbeing", "well being", "wellness", "mental health", "self care", "bienestar"] },
+          { text: "Engagement", pts: 16, aliases: ["engagement", "engaged", "employee engagement", "compromiso"] },
+          { text: "Process", pts: 12, aliases: ["process", "processes", "prozess", "workflow", "proceso"] },
+          { text: "Onboarding", pts: 9, aliases: ["onboarding", "on boarding", "induction", "new starter", "new hire", "incorporacion", "induccion"] },
           { text: "Stakeholder", pts: 7, aliases: ["stakeholder", "stakeholders", "alignment", "align", "synergy"] }
         ] }
     ]

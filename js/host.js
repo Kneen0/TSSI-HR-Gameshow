@@ -227,7 +227,7 @@
         <div class="lobby-left">
           <div class="marquee-title"><span>${esc(CFG.EVENT_TITLE || "Global HR Social Connect")}</span></div>
           <h1 class="show-name">THE BIG <em>HR</em> GAME SHOW</h1>
-          <p class="hello">Hello 🇬🇧 · Howdy 🇺🇸 · Hallo 🇩🇪 — grab your phone (or open a new browser tab)!</p>
+          <p class="hello">Hello 🇬🇧 · Howdy 🇺🇸 · Hallo 🇩🇪 · ¡Hola! 🇨🇷 — grab your phone (or open a new browser tab)!</p>
           <div class="join-box">
             <div id="qr" class="qr"></div>
             <div class="join-info">
@@ -332,9 +332,9 @@
     }
     if (st.g === "fortunes") {
       const q = g.questions[st.i];
-      body = `<div class="survey-intro">We asked 100 colleagues across 🇬🇧 🇺🇸 🇩🇪…</div><h2 class="qtext big">${esc(q.q)}</h2>
+      body = `<div class="survey-intro">We asked 100 colleagues across 🇬🇧 🇺🇸 🇩🇪 🇨🇷…</div><h2 class="qtext big">${esc(q.q)}</h2>
         <div class="fboard">${q.answers.map((_, i) => `<div class="fslot hidden"><span class="fnum">${i + 1}</span><span class="ftext"></span><span class="fpts"></span></div>`).join("")}</div>
-        <p class="detail center">Type up to ${g.maxAnswers} answers on your phone — English or Deutsch!</p>`;
+        <p class="detail center">Type up to ${g.maxAnswers} answers on your phone — English, Deutsch or Español!</p>`;
     }
     stage.innerHTML = `<div class="question">${head(`${esc(g.title)} · ${st.i + 1}/${qCount(st.g)}`, answered("in"))}${body}</div>`;
   }
@@ -622,7 +622,7 @@
       <div id="finalExtra" class="hidden">
         ${champ ? `<div class="champ">Nation champions: ${champ.flag} <b>${esc(champ.name)}</b>!</div>` : ""}
         <div class="awards">${award("translate", "Polyglot Prize", "🗣️")}${award("price", "Bargain Hunter", "🏷️")}${award("derby", "Lucky Punter", "🏇")}${award("fortunes", "Survey Whisperer", "📋")}</div>
-        <p class="thanks">Thank you · Danke · Thanks y'all! 👋</p>
+        <p class="thanks">Thank you · Danke · ¡Gracias! · Thanks y'all! 👋</p>
       </div></div>`;
     const show = (i, d) => later(() => { const el = stage.querySelector(`.pod[data-r="${i}"]`); if (el) { el.classList.remove("hidden"); Music.sfx("ding"); } }, d);
     Music.sfx("drumroll"); show(2, 2100);
