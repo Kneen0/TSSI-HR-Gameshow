@@ -317,6 +317,44 @@ input:focus { outline: none; border-color: var(--gold); }
 .thanks-p { font-size: 1.1rem; }
 .abtn span { flex: 1; }
 
+/* ---------- Play Your Cards Bright ---------- */
+.cardrow { display: flex; justify-content: center; gap: 1em; perspective: 900px; }
+.pcard { position: relative; width: 5.6em; height: 7.8em; border-radius: .6em; flex-shrink: 0; box-shadow: 0 .35em 0 #0006, 0 .6em 1.4em #0005; }
+.pcard.face { background: linear-gradient(160deg, #fff, #f1ede4); color: #1b1b2f; font-family: var(--display); }
+.pcard.face.red { color: #c8243a; }
+.pcard .cr { position: absolute; left: .4em; top: .3em; font-size: 1.05em; line-height: 1; text-align: center; }
+.pcard .cr2 { left: auto; top: auto; right: .4em; bottom: .3em; transform: rotate(180deg); }
+.pcard .cs { position: absolute; inset: 0; display: grid; place-items: center; font-size: 3em; }
+.pcard.back { background: repeating-linear-gradient(45deg, #c8243a 0 .5em, #a01b2e .5em 1em); border: .3em solid #fff; }
+.pcard.back i { position: absolute; inset: .5em; border: 2px solid #ffffff80; border-radius: .3em; }
+.pcard.done { opacity: .55; transform: scale(.9); }
+.pcard.cur { outline: .25em solid var(--gold); outline-offset: .25em; transform: scale(1.06); }
+.pcard.next { animation: wobble 1.6s ease-in-out infinite; }
+.pcard.flip { animation: cardflip .6s ease-out; }
+.pcard.reveal { outline: .25em solid var(--teal); outline-offset: .25em; }
+@keyframes cardflip { 0% { transform: rotateY(90deg) scale(1.1); } 100% { transform: rotateY(0) scale(1); } }
+@keyframes wobble { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-.2em); } }
+.hl-card { color: var(--gold); }
+.hl { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; max-width: 1100px; margin: 0 auto; width: 100%; }
+.hlbox { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .8em; border-radius: 16px; padding: .8em 1.1em; font-size: 1.35em; border: 3px solid transparent; }
+.hlbox.higher { background: #08876a; } .hlbox.lower { background: #c8243a; }
+.hlbox b { font-family: var(--display); white-space: nowrap; }
+.hlbar { height: .6em; background: #0003; border-radius: 6px; overflow: hidden; } .hlbar i { display: block; height: 100%; width: 0; background: #fffc; transition: width .5s; }
+.hln { font-family: var(--display); min-width: 1.5em; text-align: right; }
+.hl.small .hlbox { font-size: 1.05em; opacity: .55; } .hl.small .hlbox.win { opacity: 1; border-color: #fff; box-shadow: 0 0 30px #fff6; }
+.cres { display: grid; gap: .8em; }
+.verdict-big { font-family: var(--display); font-size: 2.6em; text-align: center; animation: zoom .5s; }
+.verdict-big.up { color: var(--teal); } .verdict-big.down { color: #ff7a93; } .verdict-big.snap { color: var(--gold); font-size: 2em; }
+/* phone */
+.minirow { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; font-size: 9px; }
+.player .minirow .pcard.cur { font-size: 1.6em; }
+.hlbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hlbtn { border: 0; border-radius: 18px; padding: 26px 8px; font-family: var(--display); font-size: 1.5rem; line-height: 1.2; color: #fff; cursor: pointer; min-height: 130px; box-shadow: 0 6px 0 #0006; }
+.hlbtn.up { background: #08876a; } .hlbtn.down { background: #c8243a; }
+.hlbtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #0006; }
+.hlbtn:disabled { opacity: .35; } .hlbtn.on { opacity: 1; outline: 4px solid #fff; }
+.streak { font-family: var(--display); color: var(--gold); font-size: 1.3rem; margin: .2em 0; }
+
 /* ---------- accessibility ---------- */
 button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
