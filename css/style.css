@@ -14,6 +14,7 @@ body {
 }
 button, input, select { font: inherit; }
 kbd { background: #fff2; border-radius: 4px; padding: 1px 6px; }
+[hidden] { display: none !important; }
 .hidden { visibility: hidden; opacity: 0; }
 .center { text-align: center; }
 .hint { color: var(--mute); font-size: .9em; }
@@ -196,7 +197,7 @@ body.host:not(.running) .controls { display: none; }
 .lb-empty { justify-content: center; color: var(--mute); } .gain { color: var(--teal); font-weight: 800; font-size: .85em; } .lb b { font-family: var(--display); min-width: 4em; text-align: right; }
 .next-up { text-align: center; font-size: 1.3em; color: var(--mute); }
 .nations { display: grid; gap: .6em; }
-.nation { display: grid; grid-template-columns: 1.6em 7.5em 1fr 3.6em; align-items: center; gap: .5em; }
+.nation { display: grid; grid-template-columns: 1.6em 8.6em 1fr 3.6em; align-items: center; gap: .5em; }
 .nflag { font-size: 1.4em; } .nname small { color: var(--mute); }
 .nbar { background: #fff1; border-radius: 8px; height: 1em; overflow: hidden; } .nbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--pink), var(--gold)); border-radius: 8px; transition: width .8s; }
 .nation b { text-align: right; font-family: var(--display); }
@@ -237,7 +238,8 @@ input:focus { outline: none; border-color: var(--gold); }
 #jRoom { font-family: var(--display); letter-spacing: .2em; text-transform: uppercase; font-size: 1.5rem; text-align: center; }
 .flags { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .flagbtn { background: var(--card); border: 2px solid var(--line); color: var(--ink); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.flagbtn span { font-size: 1.6rem; } .flagbtn.on { border-color: var(--gold); background: #ffd16622; }
+.flagbtn span { font-size: 1.6rem; }
+.flagbtn:last-child:nth-child(odd) { grid-column: span 2; justify-content: center; } .flagbtn.on { border-color: var(--gold); background: #ffd16622; }
 .spinner { width: 42px; height: 42px; border: 4px solid #fff3; border-top-color: var(--gold); border-radius: 50%; margin: 10px auto; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .wait { text-align: center; }
@@ -285,7 +287,7 @@ input:focus { outline: none; border-color: var(--gold); }
 .plb li b { font-family: var(--display); }
 .plb li em { font-style: normal; color: var(--teal); font-weight: 800; font-size: .85em; }
 .plb li.me { background: #ffd16633; outline: 2px solid var(--gold); }
-.player .nation { grid-template-columns: 1.6em 6.5em 1fr 3.2em; font-size: .9rem; }
+.player .nation { grid-template-columns: 1.6em 7.6em 1fr 3.2em; font-size: .9rem; }
 
 
 /* ---------- player extras ---------- */
