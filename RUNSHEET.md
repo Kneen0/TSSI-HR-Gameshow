@@ -12,8 +12,8 @@ Lines in *italics* are suggested patter — say them your way. 🎵 marks what t
 ## 0:00 – 5:00 · Lobby (5 min)
 🎵 Lobby groove loops; a *pop* plays as each person joins.
 
-> *"Good morning UK, good morning America — and guten Tag, Deutschland! Welcome to the Monthly Global HR Social Connect… and this month it's **THE BIG HR GAME SHOW!***
-> *Grab your phone, scan the QR code — or open the link in the chat — enter the room code, your name, and pick your flag. Yes, the flag matters: tonight it's 🇬🇧 versus 🇺🇸 versus 🇩🇪 in the **Battle of the Nations**."*
+> *"Good morning UK, good morning America — guten Tag, Deutschland — and ¡pura vida, Costa Rica! Welcome to the Monthly Global HR Social Connect… and this month it's **THE BIG HR GAME SHOW!***
+> *Grab your phone, scan the QR code — or open the link in the chat — enter the room code, your name, and pick your flag. Yes, the flag matters: tonight it's 🇬🇧 versus 🇺🇸 versus 🇩🇪 versus 🇨🇷 in the **Battle of the Nations**."*
 
 While people join, read out names and tease the countries:
 > *"Big turnout from Germany already — come on UK, the Germans are on time again!"*
@@ -25,11 +25,11 @@ Remove silly names by clicking them. When the count stops rising, press **Next**
 ## 5:00 – 13:00 · Round 1 — Lost in Translation (8 min)
 🎵 Whoosh + quirky xylophone jingle, then lobby music under the warm-up vote.
 
-**Intro (≈1 min)** — the screen shows the rules and opens a vote on phones: *Biscuit 🇬🇧, Cookie 🇺🇸 or Keks 🇩🇪?* (+50 pts just for voting)
+**Intro (≈1 min)** — the screen shows the rules and opens a vote on phones: *Biscuit 🇬🇧, Cookie 🇺🇸, Keks 🇩🇪 or Galleta 🇨🇷?* (+50 pts just for voting)
 > *"Three countries, one language — allegedly. Before we start, let's settle the biggest debate in global HR: what is this? 🍪 Vote now — 50 points just for taking part!"*
 > React to the live bars: *"Cookie's winning… the Americans are mobilising!"*
 
-**8 questions × ~45 s** — 15 s to answer; it reveals automatically (early if everyone's in). 🎵 Thinking music, ticks in the last 5 s, buzzer at zero, *ding* on the reveal.
+**9 questions × ~45 s** (including a Costa Rican one — *¡Pura vida!*) — 15 s to answer; it reveals automatically (early if everyone's in). 🎵 Thinking music, ticks in the last 5 s, buzzer at zero, *ding* on the reveal.
 - Read the fun fact on each reveal and shout out the ⚡ Fastest finger.
 - Good banter on Q2 (*"table that"*): *"UK and US colleagues — this is why your meetings go wrong!"*
 
@@ -54,7 +54,7 @@ Remove silly names by clicking them. When the count stops rising, press **Next**
 ## 22:00 – 32:00 · Round 3 — The Desk Derby (10 min)
 🎵 Original bugle "call to the post", then a galloping race theme.
 
-**Intro** — vote: *Royal Ascot, Kentucky Derby or the Deutsches Derby?*
+**Intro** — vote: *Royal Ascot, Kentucky Derby, the Deutsches Derby or El Tope in San José?*
 > *"Ladies and gentlemen, hats on — it's DERBY DAY! Six runners, two races. Back a horse; longer odds pay out bigger. And during the race — MASH that cheer button. The louder your cheering, the faster your horse… a bit."*
 
 **Each race (~4 min):**
@@ -69,8 +69,8 @@ Remove silly names by clicking them. When the count stops rising, press **Next**
 ## 32:00 – 42:00 · Round 4 — Global Fortunes (10 min)
 🎵 Dramatic game-show build.
 
-**Intro** — vote: *Fish & chips, Burger or Currywurst?*
-> *"We asked 100 colleagues across the UK, US and Germany… Type up to three answers — English or Deutsch, we'll understand you. 10 points for every person who said the same thing!"*
+**Intro** — vote: *Fish & chips, Burger, Currywurst or Casado?*
+> *"We asked 100 colleagues across the UK, US, Germany and Costa Rica… Type up to three answers — English, Deutsch or Español, we'll understand you. 10 points for every person who said the same thing!"*
 
 **4 questions × ~2 min** — 40 s to answer. The board flips answers from #6 up to #1, showing how many of you got each, then the biggest **✖ Not on the board** answer with a buzzer.
 > *"Survey says…!"* before you press Next is mandatory. 😉
@@ -84,7 +84,7 @@ Remove silly names by clicking them. When the count stops rising, press **Next**
 - Announce the **Nation Champions** (highest *average*, so every office can win).
 - Read the awards: 🗣️ Polyglot Prize · 🏷️ Bargain Hunter · 🏇 Lucky Punter · 📋 Survey Whisperer.
 
-> *"Thank you, danke schön, and thanks y'all! Same time next month — and we'll have a new set of questions. Send us your ideas!"*
+> *"Thank you, danke schön, ¡muchas gracias! and thanks y'all! Same time next month — and we'll have a new set of questions. Send us your ideas!"*
 
 ---
 
