@@ -3,7 +3,8 @@ window.U = (function () {
   const C = window.CONTENT;
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const $ = (sel, root) => (root || document).querySelector(sel);
-  const flag = (id) => (C.countries.find((c) => c.id === id) || C.countries[3]).flag;
+  const OTHER = () => C.countries.find((c) => c.id === "XX") || C.countries[C.countries.length - 1];
+  const flag = (id) => (C.countries.find((c) => c.id === id) || OTHER()).flag;
   const fmt = (n) => Math.round(n).toLocaleString("en-GB");
   /* number with up to 2 decimals, e.g. 7,995 or 5.65 */
   const num = (v) => (Math.round(v * 100) / 100).toLocaleString("en-GB", { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
@@ -17,7 +18,7 @@ window.U = (function () {
       s = s.split(dec === "." ? "," : ".").join("").replace(",", ".");
     } else s = s.replace(",", ".");
     const v = parseFloat(s);
-    return isFinite(v) && v >= 0 ? v : NaN;
+    return isFinite(v) && v >= 0 && v < 1e9 ? v : NaN;   // ignore absurd values
   }
   const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   const roomCode = () => { const L = "ABCDEFGHJKLMNPQRSTUVWXYZ"; let s = ""; for (let i = 0; i < 4; i++) s += L[Math.floor(Math.random() * L.length)]; return s; };
@@ -82,7 +83,7 @@ window.U = (function () {
     const rows = countryTable(players);
     const max = Math.max(1, ...rows.map((r) => r.avg));
     return '<div class="nations">' + rows.map((r) => {
-      const c = C.countries.find((x) => x.id === r.id) || C.countries[3];
+      const c = C.countries.find((x) => x.id === r.id) || OTHER();
       return `<div class="nation"><span class="nflag">${c.flag}</span><span class="nname">${esc(c.name)} <small>(${r.n})</small></span>
         <span class="nbar"><i style="width:${Math.max(4, (r.avg / max) * 100)}%"></i></span><b>${fmt(r.avg)}</b></div>`;
     }).join("") + '<div class="nnote">Average points per player — so every nation can win</div></div>';

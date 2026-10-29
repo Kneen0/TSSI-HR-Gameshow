@@ -66,13 +66,15 @@
       if (!S.players[m.id]) {
         const taken = new Set(Object.values(S.players).map((p) => p.name.toLowerCase()));
         let n = name, k = 2; while (taken.has(n.toLowerCase())) n = name.slice(0, 15) + " " + k++;
-        S.players[m.id] = { name: n, country, score: 0, g: {} };
+        S.players[m.id] = { name: n, country, score: 0, g: {}, seen: Date.now() };
         Music.sfx("pop");
         if (st.k === "lobby") addChip(m.id);
-      } else S.players[m.id].country = country;
+      } else { S.players[m.id].country = country; S.players[m.id].seen = Date.now(); }
       updateCounts(); save(); pubSoon(); return; // throttled: a burst of joins = one broadcast
     }
-    const p = S.players[m.id]; if (!p || m.step !== S.step) return;
+    const p = S.players[m.id]; if (!p) return;
+    p.seen = Date.now();                          // last sign of life (see checkAllIn)
+    if (m.step !== S.step) return;
     const open = Date.now() <= S.deadline + 1500;
     if (m.t === "vote" && st.k === "intro") {
       const v = +m.v; if (!(v >= 0 && v < game().poll.options.length)) return;
@@ -204,7 +206,11 @@
 
   function checkAllIn() {
     const st = cur(); if (st.k !== "q") return;
-    const ids = Object.keys(S.players); if (!ids.length) return;
+    // ignore "ghosts" (someone who switched phone and left an old copy behind): only wait for
+    // players who've done something in the last 3 minutes
+    const recent = Date.now() - 180000;
+    const ids = Object.keys(S.players).filter((id) => !S.players[id].seen || S.players[id].seen > recent || S.ans[id]);
+    if (!ids.length) return;
     const done = ids.every((id) => S.ans[id] && (st.g !== "fortunes" || S.ans[id].done));
     if (done && S.deadline - Date.now() > 2500) { S.allIn = true; S.deadline = Date.now() + 2000; pub(true); }
   }

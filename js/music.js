@@ -50,8 +50,13 @@ window.Music = (function () {
       const p = unlockEl.play(); if (p && p.catch) p.catch(() => {});
     } catch (e) {}
   }
-  function init() {
-    unlockIOS();
+  /* opts.ambient (player phones): mix politely with other audio — never take over
+     the phone's sound, so a Teams call on the same phone isn't interrupted */
+  let ambient = false;
+  function init(opts) {
+    if (opts && opts.ambient) ambient = true;
+    if (ambient) { try { if (navigator.audioSession) navigator.audioSession.type = "ambient"; } catch (e) {} }
+    else unlockIOS();
     if (ctx) { if (ctx.state !== "running") ctx.resume().catch(() => {}); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -73,7 +78,7 @@ window.Music = (function () {
     applyVol();
     if (ctx.state !== "running") ctx.resume().catch(() => {});
     // browsers can suspend audio (tab switched, phone locked, call started): any tap brings it back
-    const wake = () => { if (ctx && ctx.state !== "running") { ctx.resume().catch(() => {}); unlockIOS(); } };
+    const wake = () => { if (ctx && ctx.state !== "running") { ctx.resume().catch(() => {}); if (!ambient) unlockIOS(); } };
     ["pointerdown", "keydown", "touchend"].forEach((ev) => document.addEventListener(ev, wake, { passive: true }));
     document.addEventListener("visibilitychange", () => { if (!document.hidden) wake(); });
   }

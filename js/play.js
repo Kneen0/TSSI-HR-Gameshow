@@ -13,7 +13,7 @@
   let deadline = 0, lastStep = -1, lastJoin = 0;
   let local = {};          // what I've done this step: {step, v, list, done, pick}
   let cheers = 0, cheerTimer = null, sound = true, showBoard = false;
-  let holdUntil = 0, holdTimer = null, shownLb = [], shownDeltas = {};
+  let holdUntil = 0, holdTimer = null, shownLb = [], shownDeltas = {}, boardJump = false;
   // live: remember the player on this device; demo: each tab is its own player
   const store = window.TSSI_LIVE ? localStorage : sessionStorage;
 
@@ -25,7 +25,7 @@
   function beep(kind) {
     if (navigator.vibrate) try { navigator.vibrate(kind === "buzz" ? 120 : 15); } catch (e) {}
     if (!sound) return;
-    try { Music.init(); Music.sfx(kind); } catch (e) {}
+    try { Music.init({ ambient: true }); Music.sfx(kind); } catch (e) {}
   }
 
   /* ---------- join ---------- */
@@ -57,7 +57,7 @@
       if (room.length !== 4) return err("Enter the 4-letter room code from the big screen.");
       if (!name) return err("Please enter your name.");
       if (!country) return err("Pick a flag — it's for the Battle of the Nations!");
-      Music.init();
+      Music.init({ ambient: true });
       me = { id: me && me.room === room ? me.id : U.uid(), name, country, room };
       store.setItem("tssi-player", JSON.stringify(me));
       history.replaceState(null, "", "?room=" + room);
@@ -68,10 +68,12 @@
 
   let ticker = null;
   function connect() {
-    if (T) return sendJoin();
-    T = createTransport(me.room, "player");
-    T.onMessage(onState);
-    T.onStatus((s) => { const el = $("#conn"); if (el) el.textContent = s === "SUBSCRIBED" ? "" : "Reconnecting…"; if (s === "SUBSCRIBED") sendJoin(); });
+    if (T && T.room !== me.room) { location.reload(); return; }   // switching rooms: start clean
+    if (!T) {
+      T = createTransport(me.room, "player"); T.room = me.room;
+      T.onMessage(onState);
+      T.onStatus((s) => { const el = $("#conn"); if (el) el.textContent = s === "SUBSCRIBED" ? "" : "Reconnecting…"; if (s === "SUBSCRIBED" && me) sendJoin(); });
+    } else sendJoin();
     app.innerHTML = `<div class="wait card"><div class="spinner"></div><p>Connecting to room <b>${esc(me.room)}</b>…</p>
       <p class="hint">Make sure the host's screen is open.</p><button class="btn ghost small" id="changeRoom">Wrong room or name?</button></div>`;
     $("#changeRoom").onclick = () => { store.removeItem("tssi-player"); location.href = location.pathname; };
@@ -84,7 +86,8 @@
   function onState(s) {
     if (!me || !s || s.t !== "state" || s.room !== me.room) return;
     if (s.kicked && s.kicked.includes(me.id)) {
-      store.removeItem("tssi-player"); me = null; T = null;
+      // keep the connection open; forget who we were so the rejoin starts fresh
+      store.removeItem("tssi-player"); me = null; S = null; lastStep = -1; clearInterval(cheerTimer); cheerTimer = null;
       return joinScreen("The host removed that name — please rejoin with a different one.");
     }
     const inGame = s.lb.some((r) => r[0] === me.id);
@@ -105,10 +108,10 @@
 
     if (stepChanged) {
       lastStep = s.step;
-      const prev = local;
       local = loadLocal(s.step);
+      const prev = loadLocal(s.step - 1);
       // reveal/race/result screens need what I did on the step before (my answer, my horse)
-      if (["reveal", "race", "result"].includes(s.k) && !local.carried && prev && prev.step === s.step - 1) {
+      if (["reveal", "race", "result"].includes(s.k) && !local.carried) {
         local.prev = { v: prev.v, list: prev.list };
         local.pick = prev.pick; local.carried = true; saveLocal();
       }
@@ -127,11 +130,17 @@
     beep((S.deltas[me.id] || 0) > 0 ? "ding" : "buzz");
   }
 
-  function loadLocal(step) {
-    try { const l = JSON.parse(store.getItem("tssi-local") || "{}"); if (l.step === step && l.room === me.room) return l; } catch (e) {}
-    return { step, room: me.room };
+  /* what this phone did on each recent step (answer, horse, cheers) — kept in storage
+     so a refresh or a dropped connection never loses "your answer" */
+  function memo() { try { const m = JSON.parse(store.getItem("tssi-steps") || "{}"); return m.room === me.room ? m : { room: me.room, s: {} }; } catch (e) { return { room: me.room, s: {} }; } }
+  function loadLocal(step) { return memo().s[step] || { step, room: me.room }; }
+  function saveLocal() {
+    try {
+      const m = memo(); m.s[local.step] = local;
+      Object.keys(m.s).map(Number).sort((a, b) => b - a).slice(12).forEach((k) => delete m.s[k]); // keep the last 12 steps
+      store.setItem("tssi-steps", JSON.stringify(m));
+    } catch (e) {}
   }
-  function saveLocal() { try { store.setItem("tssi-local", JSON.stringify(local)); } catch (e) {} }
 
   function resendIfMissing() {
     if (!S || !S.got) return;
@@ -154,10 +163,12 @@
     const i = lb.findIndex((r) => r[0] === me.id);
     return { rank: i + 1, of: lb.length, score: i >= 0 ? lb[i][3] : 0 };
   }
+  /* the host may have renamed us (e.g. "Alice 2" if two Alices joined) */
+  function myName() { const row = S && S.lb.find((r) => r[0] === me.id); return row ? row[1] : me.name; }
   function header() {
     const r = myRank();
     return `<header class="phead">
-      <span class="pme">${flag(me.country)} ${esc(me.name)}</span>
+      <span class="pme" id="hName">${flag(me.country)} ${esc(myName())}</span>
       <span class="pscore"><b id="hScore">${fmt(r.score)}</b> pts <span id="hRank">${r.rank ? "· #" + r.rank + "/" + r.of : ""}</span></span>
       <button id="lbBtn" class="iconbtn${showBoard ? " on" : ""}" aria-label="Leaderboard" title="Leaderboard">🏆</button>
       <button id="sndBtn" class="iconbtn" aria-label="Sound on/off" title="Sound">${sound ? "🔔" : "🔕"}</button>
@@ -168,10 +179,11 @@
     const hs = $("#hScore"), hr = $("#hRank");
     if (hs) hs.textContent = fmt(r.score);
     if (hr) hr.textContent = r.rank ? "· #" + r.rank + "/" + r.of : "";
+    const hn = $("#hName"); if (hn) hn.textContent = flag(me.country) + " " + myName();
   }
   function render() {
     app.innerHTML = header() + `<main id="pbody" class="pbody"></main>`;
-    $("#lbBtn").onclick = () => { showBoard = !showBoard; $("#lbBtn").classList.toggle("on", showBoard); renderBody(); window.scrollTo(0, 0); };
+    $("#lbBtn").onclick = () => { showBoard = !showBoard; boardJump = showBoard; $("#lbBtn").classList.toggle("on", showBoard); renderBody(); window.scrollTo(0, 0); };
     $("#sndBtn").onclick = () => { sound = !sound; $("#sndBtn").textContent = sound ? "🔔" : "🔕"; };
     renderBody();
   }
@@ -202,7 +214,9 @@
     if (showBoard) {
       b.innerHTML = `<div class="card">${boardHtml()}<button class="btn big" id="lbClose">Back to the game</button></div>`;
       $("#lbClose").onclick = () => { showBoard = false; $("#lbBtn").classList.remove("on"); renderBody(); };
-      const meRow = b.querySelector(".plb .me"); if (meRow && meRow.offsetTop > innerHeight * 0.6) meRow.scrollIntoView({ block: "center" });
+      const meRow = b.querySelector(".plb .me");
+      if (boardJump && meRow && meRow.offsetTop > innerHeight * 0.6) meRow.scrollIntoView({ block: "center" });
+      boardJump = false;   // live updates after that leave your scroll position alone
       return;
     }
     const v = S.view || {}, k = S.k, g = S.g;
@@ -215,7 +229,7 @@
 
     if (k === "lobby") {
       const others = S.lb.filter((r) => r[0] !== me.id);
-      b.innerHTML = `<div class="card center"><div class="big">🎉</div><h2>You're in, ${esc(me.name)}!</h2><p>Watch the big screen — the show starts soon.</p></div>
+      b.innerHTML = `<div class="card center"><div class="big">🎉</div><h2>You're in, ${esc(myName())}!</h2><p>Watch the big screen — the show starts soon.</p></div>
         <div class="card"><div class="tag">${S.lb.length} in the studio</div>
         <div class="who">${others.slice(0, 40).map((r) => `<span>${flag(r[2])} ${esc(r[1])}</span>`).join("")}${others.length > 40 ? `<span>+${others.length - 40} more</span>` : ""}${others.length ? "" : '<span class="hint">You\'re the first one here!</span>'}</div></div>`;
     }
@@ -289,6 +303,9 @@
           e.preventDefault();
           const t = $("#fIn").value.trim(); if (!t) return;
           if (list.some((x) => U.norm(x) === U.norm(t))) { $("#lockMsg").textContent = "You've already said that one!"; return; }
+          const q = C.fortunes.questions[v.n - 1], k = q ? U.matchSurvey(t, q.answers) : -1;
+          const same = k >= 0 && list.find((x) => U.matchSurvey(x, q.answers) === k);
+          if (same) { $("#lockMsg").textContent = `That counts as the same answer as “${same}” — try a different one!`; return; }
           local.list = list.concat([t]); saveLocal(); send({ t: "answer", v: t }); beep("pop"); renderBody();
           const inp = $("#fIn"); if (inp) inp.focus();
         };
