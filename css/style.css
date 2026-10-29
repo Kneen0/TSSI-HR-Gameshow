@@ -56,6 +56,7 @@ body.host:not(.running) .controls { display: none; }
 .controls .btn:disabled { opacity: .35; cursor: default; }
 .controls input[type=range] { width: 80px; accent-color: var(--gold); }
 .ctl-conn { color: var(--pink); font-weight: 800; }
+.controls .btn.icon.sound-off { width: auto; padding: 6px 12px; background: var(--pink); color: #fff; border-color: var(--pink); animation: bulbs 1.2s steps(2) infinite; }
 .hide-ctl .controls { display: none; }
 .controls b { color: var(--ink); }
 .controls select { flex-shrink: 1; min-width: 120px; max-width: 230px; background: #fff1; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 4px; }
