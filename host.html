@@ -17,11 +17,12 @@
       <button id="btnNew" class="btn big">🎬 Open the studio doors</button>
       <button id="btnResume" class="btn ghost" hidden></button>
       <p id="splashMode" class="hint"></p>
-      <p class="hint">Keys: <kbd>Space</kbd>/<kbd>→</kbd> next · <kbd>←</kbd> back · <kbd>M</kbd> mute · <kbd>H</kbd> hide controls · <kbd>F</kbd> fullscreen</p>
+      <p class="hint">Keys: <kbd>Space</kbd>/<kbd>→</kbd> next · <kbd>←</kbd> back · <kbd>T</kbd> talk (fade music) · <kbd>M</kbd> mute · <kbd>H</kbd> hide controls · <kbd>F</kbd> fullscreen</p>
     </div>
   </div>
 
   <main id="stage" class="stage"></main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <nav id="controls" class="controls">
     <span class="ctl-room" title="Room code · players connected">Room <b id="ctlRoom">----</b> · <b id="ctlPlayers">0</b> 👥</span>
@@ -31,6 +32,8 @@
     <span class="ctl-grow"></span>
     <button id="ctlLink" class="btn small ghost" title="Copy the players' join link">🔗 Join link</button>
     <select id="ctlJump" title="Jump to any screen"></select>
+    <button id="ctlTalk" class="btn small ghost" title="Fade the music out so people can hear you (T)">🎙 Talk</button>
+    <button id="ctlMusic" class="btn small ghost" title="Music mode"></button>
     <button id="ctlMute" class="btn small ghost icon" title="Mute (M)">🔊</button>
     <input id="ctlVol" type="range" min="0" max="1" step="0.05" value="0.7" title="Volume">
     <button id="ctlPrev" class="btn small ghost icon" title="Back (←)">◀</button>

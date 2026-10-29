@@ -1,20 +1,20 @@
 # 🎤 The Big HR Game Show
-**TSSI HR · Monthly Global HR Social Connect** — a 45-minute live, multiplayer game show for colleagues in 🇬🇧 the UK, 🇺🇸 the US and 🇩🇪 Germany.
+**TSSI HR · Monthly Global HR Social Connect** — a 45-minute live, multiplayer game show for colleagues in 🇬🇧 the UK, 🇺🇸 the US, 🇩🇪 Germany and 🇨🇷 Costa Rica.
 
 Everyone plays on their own phone or a spare browser tab. The host shares one "big screen" on Teams/Zoom with music and sound effects. Scores update live for everyone, plus a **Battle of the Nations**.
 
 | # | Game | Style | Time |
 |---|------|-------|------|
 | 0 | Lobby & warm-up | Join by QR code / room code | 5 min |
-| 1 | **Lost in Translation** | Quick-fire quiz on UK/US/German words, speed bonus | 8 min |
+| 1 | **Play Your Cards Bright** | *Play Your Cards Right* style — everyone calls HIGHER or LOWER on giant cards, streak bonuses | 8 min |
 | 2 | **The Price is Bright** | *Price is Right* style — closest without going over | 9 min |
 | 3 | **The Desk Derby** | Horse-racing: back a horse, mash CHEER to boost it | 10 min |
 | 4 | **Global Fortunes** | *Family Fortunes* style — "We asked 100 colleagues…" | 10 min |
 | 🏆 | Grand Finale | Podium, nation champions, awards | 3 min |
 
-Every game opens with an **interactive intro**: animated title card, its own jingle, three-line rules, and a live warm-up vote on phones (e.g. *Biscuit, Cookie or Keks?*) worth 50 points.
+Every game opens with an **interactive intro**: animated title card, its own jingle, three-line rules, and a live warm-up vote on phones (e.g. *Which nation has the best poker face?*) worth 50 points.
 
-All music is original and synthesised in the browser — no audio files, no licensing issues.
+Built-in music is original and synthesised in the browser — no audio files, no licensing issues — and you can swap in your own tracks (see *Music* below).
 
 ---
 
@@ -117,7 +117,7 @@ Supabase Free allows 200 concurrent connections and 100 Realtime messages per se
   - **Google Meet:** share a **Chrome tab** and keep **Also share tab audio** on.
 - Press **F** for fullscreen and **H** to hide the control bar (H again to bring it back).
 
-**Controls:** `Space` / `→` next · `←` back · `M` mute · `H` hide controls · `F` fullscreen. The **Jump to** menu skips straight to any game if you're short on time. The clock shows ✅ on time or ⚠️ minutes behind the 40-minute plan. The big screen automatically resizes its text to fit whatever window you share.
+**Controls:** `Space` / `→` next · `←` back · `T` talk (fade the music) · `M` mute · `H` hide controls · `F` fullscreen. The **Jump to** menu skips straight to any game if you're short on time. The clock shows ✅ on time or ⚠️ minutes behind the 40-minute plan. The big screen automatically resizes its text to fit whatever window you share.
 
 **Things that happen automatically:** question timers close themselves and reveal (early, if everyone has answered); betting closes and the race starts; the race result shows when every horse is home. Pressing **Next** mid-race fast-forwards to a photo finish. Phones wait for the big screen's drumroll before showing answers, so nobody's spoiled.
 
@@ -134,16 +134,41 @@ Full minute-by-minute host script with bilingual banter: **RUNSHEET.md**.
 
 ---
 
+### Music (talk-friendly)
+The **🎵** button in the control bar switches between three modes (your choice is remembered):
+
+| Mode | What plays | Use when |
+|---|---|---|
+| **🎵 Timers** *(default)* | Jingles and sound effects, plus quiet music in the lobby, while a countdown clock runs, and during the race. Silent while you explain rules or read the leaderboard. | Most Teams calls |
+| **🎵 Stings** | Jingles and sound effects only. | You talk over everything / a big call |
+| **🎵 Full** | Music almost all the time. | Noisy in-room event |
+
+Press **🎙 Talk** (or `T`) any time to fade the music out instantly — sound effects still work.
+
+**Using your own music:** put MP3s in the `audio` folder with these names, and each replaces the built-in tune for that moment (any you leave out keep the built-in one). Full details are in `audio/README.txt`.
+
+| File | Plays |
+|---|---|
+| `lobby.mp3` | Lobby & betting screen (quiet loop) |
+| `think.mp3` | While a countdown clock runs (quiet loop) |
+| `gallop.mp3` | During the horse race (quiet loop) |
+| `cards.mp3`, `price.mp3`, `derby.mp3`, `fortunes.mp3` | Each round's intro jingle (fades after 9 s) |
+| `board.mp3` | Leaderboard sting (fades after 6 s) |
+| `victory.mp3` | Grand finale fanfare (fades after 20 s) |
+
+Get tracks from **Pixabay Music** (pixabay.com/music): free, commercial use allowed, no credit needed — search "game show", "quiz countdown", "fanfare", "horse race". Don't use real TV theme tunes; they're copyrighted. When the host screen starts it shows *"🎵 Using your music for: …"* to confirm what it found.
+
 ## 5. Making it yours (monthly refresh)
 
 Everything editable lives in **`js/content.js`** — plain text in a fixed shape:
-- **Lost in Translation:** `q`, four `options`, `answer` (0 = first option), and a `fact` for the reveal.
+- **Play Your Cards Bright:** nothing to prepare — the cards are shuffled fresh every show. Change `rows`, `perRow` or `seconds` if you want it longer or shorter.
+- **Lost in Translation** (optional extra round — add `"translate"` to `order` to use it): `q`, four `options`, `answer` (0 = first option), and a `fact` for the reveal.
 - **Price is Bright:** `name`, `currency`, `answer`, `fact`. The defaults are historical launch prices (1959 Mini £497, 2007 iPhone $499, 1974 VW Golf 7,995 DM, etc.) — **double-check them**, or swap in your own: office snacks, company swag, local coffee.
 - **Desk Derby:** horse names, colours, odds and payouts. Win rates are tuned to roughly match the odds.
 - **Global Fortunes:** the survey numbers are illustrative. For the best reveal, send a one-question Microsoft Form to colleagues the week before and put the real counts in. Add likely spellings and German words to `aliases`; small typos are already forgiven.
 - **Running order:** `order: ["translate", "price", "derby", "fortunes"]` — reorder or drop games.
 
-**Scoring at a glance:** warm-up vote 50 · quiz 500 + up to 500 speed · price 1000/600/400 for the three closest under, 2000 for exact, 200 for anyone else within 25% · derby pays the horse's listed amount, 200 for second · survey 10 pts per person who gave each answer. Country battle uses **average** score per player so a small office can beat a big one.
+**Scoring at a glance:** warm-up vote 50 · cards 500 per right call, +100 for each call in a row (same value = nobody scores) · price 1000/600/400 for the three closest under, 2000 for exact, 200 for anyone else within 25% · derby pays the horse's listed amount, 200 for second · survey 10 pts per person who gave each answer. Country battle uses **average** score per player so a small office can beat a big one.
 
 ---
 

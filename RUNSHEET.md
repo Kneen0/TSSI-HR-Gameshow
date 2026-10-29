@@ -3,6 +3,7 @@
 Lines in *italics* are suggested patter — say them your way. 🎵 marks what the music is doing so you can talk over it (or let it breathe).
 
 ## T-15 min · Setup
+- Music mode: leave it on **🎵 Timers** (talk-friendly). Tap **🎙 Talk** or press **T** whenever you want silence to speak — e.g. the moment a jingle finishes if you want to jump in early.
 - Open `host.html` → **Open the studio doors** (lobby music starts).
 - Start sharing the window **with computer sound on**. Ask a colleague: *"Can you hear the music?"*
 - Post the join link in the chat. Press **F** (fullscreen) and **H** (hide controls).
