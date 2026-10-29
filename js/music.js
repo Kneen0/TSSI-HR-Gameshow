@@ -1,10 +1,28 @@
-/* Original game-show music & sound effects, synthesised live with the
-   Web Audio API — no audio files, no licensing worries.
+/* Game-show music & sound effects.
+   • Built-in: original tunes synthesised live with the Web Audio API — no files,
+     no licensing worries.
+   • Your own tracks: put MP3s in the /audio folder named after a slot
+     (lobby.mp3, think.mp3, cards.mp3 …, see README) and they replace the
+     built-in tune for that slot automatically.
+   • Music modes (talk-friendly): "stings" · "timer" (default) · "full".
    Music.init() must be called from a click (browser autoplay rules). */
 window.Music = (function () {
   let ctx = null, master = null, musicBus = null, sfxBus = null;
-  let current = null; // {gain, timer, id}
+  let current = null; // {gain, timer, name, src}
   let volume = 0.7, muted = false;
+
+  /* ---- music modes ----
+     stings : jingles & sound effects only — silence whenever the host talks
+     timer  : + quiet music in the lobby, while a countdown clock runs, and during the race
+     full   : music almost all the time (the original behaviour) */
+  const MODES = ["timer", "stings", "full"];
+  let mode = "timer";
+  try { const m = localStorage.getItem("tssi-music-mode"); if (MODES.includes(m)) mode = m; } catch (e) {}
+  const LOOP_LEVEL = { stings: 0, timer: 0.4, full: 0.75 };   // background loops sit under your voice
+  /* the longest a one-off jingle may run before fading (keeps long MP3s short) */
+  const MAX_STING = { cards: 9, price: 9, derby: 9, fortunes: 9, translate: 9, board: 6, victory: 20 };
+  const SLOTS = ["lobby", "think", "cards", "price", "derby", "gallop", "fortunes", "board", "victory", "translate"];
+  const FILES = {};      // slot → decoded AudioBuffer from /audio/<slot>.mp3
 
   const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   function midi(n) {
@@ -43,6 +61,14 @@ window.Music = (function () {
     comp.threshold.value = -14; comp.ratio.value = 4;
     master.connect(comp); comp.connect(ctx.destination);
     musicBus = ctx.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master);
+    // a touch of "studio" reverb makes the built-in tunes sound less like a ringtone
+    try {
+      const len = Math.floor(ctx.sampleRate * 1.6), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+      const verb = ctx.createConvolver(), wet = ctx.createGain();
+      verb.buffer = ir; wet.gain.value = 0.22;
+      musicBus.connect(verb); verb.connect(wet); wet.connect(master);
+    } catch (e) {}
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(master);
     applyVol();
     if (ctx.state !== "running") ctx.resume().catch(() => {});
@@ -219,21 +245,44 @@ window.Music = (function () {
 
   /* ---------- public API ---------- */
   function stop(fade) {
-    if (!current) return;
+    if (!current || !ctx) return;
     const c = current; current = null;
-    clearTimeout(c.timer);
-    const now = ctx.currentTime;
+    clearTimeout(c.timer); clearTimeout(c.fadeTimer);
+    const now = ctx.currentTime, f = fade == null ? 0.4 : fade;
+    c.gain.gain.cancelScheduledValues(now);
     c.gain.gain.setValueAtTime(c.gain.gain.value, now);
-    c.gain.gain.linearRampToValueAtTime(0, now + (fade == null ? 0.4 : fade));
-    setTimeout(() => { try { c.gain.disconnect(); } catch (e) {} }, 1500);
+    c.gain.gain.linearRampToValueAtTime(0, now + f);
+    setTimeout(() => { try { if (c.src) c.src.stop(); c.gain.disconnect(); } catch (e) {} }, f * 1000 + 300);
   }
+  /* play(name, loop, then): a loop is background music (obeys the music mode and sits
+     quieter); a non-loop is a jingle/sting (always plays). `then` = loop to follow it,
+     only used in "full" mode so the room goes quiet after a jingle. */
   function play(name, loop, then) {
-    if (!ctx || !SONGS[name]) return 0;
+    if (!ctx || !(SONGS[name] || FILES[name])) return 0;
+    if (loop && mode === "stings") { stop(0.6); return 0; }
+    if (then && mode !== "full") then = null;
     stop(0.25);
     const g = ctx.createGain(); g.connect(musicBus);
-    const c = { gain: g, timer: null, name };
+    const level = loop ? LOOP_LEVEL[mode] : 1;
+    const c = { gain: g, timer: null, name, loop: !!loop };
     current = c;
     let t = ctx.currentTime + 0.08;
+    if (FILES[name]) {                                   // your own MP3 for this slot
+      const src = ctx.createBufferSource(); src.buffer = FILES[name]; src.loop = !!loop; c.src = src;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level, t + 0.15);
+      src.connect(g); src.start(t);
+      let len = FILES[name].duration;
+      if (!loop) {
+        const max = MAX_STING[name];
+        if (max && len > max) {                          // long track used as a jingle → fade it out
+          len = max;
+          c.fadeTimer = setTimeout(() => { if (current === c) stop(1.2); }, (max - 1.2) * 1000);
+        }
+        c.timer = setTimeout(() => { if (current !== c) return; if (then) play(then, true); else current = null; }, len * 1000 + 150);
+      }
+      return len;
+    }
+    g.gain.value = level;
     const len = SONGS[name](g, t);
     if (loop) {
       const sched = () => {
@@ -242,8 +291,9 @@ window.Music = (function () {
         c.timer = setTimeout(sched, (t - ctx.currentTime) * 1000 - 300);
       };
       c.timer = setTimeout(sched, len * 1000 - 300);
-    } else if (then) {
-      c.timer = setTimeout(() => { if (current === c) play(then, true); }, len * 1000 + 150);
+    } else {
+      // when a jingle ends: start the follow-on loop ("full" mode) or mark the music as finished
+      c.timer = setTimeout(() => { if (current !== c) return; if (then) play(then, true); else current = null; }, len * 1000 + 150);
     }
     return len;
   }
@@ -259,6 +309,35 @@ window.Music = (function () {
     toggleMute() { muted = !muted; applyVol(); return muted; },
     get ready() { return !!ctx && ctx.state === "running"; },
     get muted() { return muted; },
-    songs: Object.keys(SONGS)
+    songs: Object.keys(SONGS),
+    /* music mode */
+    get mode() { return mode; },
+    modes: MODES,
+    setMode(m) {
+      if (!MODES.includes(m)) return;
+      mode = m; try { localStorage.setItem("tssi-music-mode", m); } catch (e) {}
+      if (current && current.loop) {               // apply straight away to anything looping now
+        if (m === "stings") stop(0.6);
+        else if (ctx) current.gain.gain.linearRampToValueAtTime(LOOP_LEVEL[m], ctx.currentTime + 0.4);
+      }
+    },
+    get playing() { return !!current; },
+    /* looks for /audio/<slot>.mp3 files and uses any it finds; returns the slots found */
+    async loadFiles(base) {
+      if (!ctx) return [];
+      const found = [];
+      await Promise.all(SLOTS.map(async (slot) => {
+        try {
+          const res = await fetch((base || "audio/") + slot + ".mp3", { cache: "no-cache" });
+          const type = res.headers.get("content-type") || "";
+          if (!res.ok || /html/i.test(type)) return;      // missing file (Netlify serves an HTML 404)
+          const buf = await res.arrayBuffer();
+          FILES[slot] = await new Promise((ok, bad) => ctx.decodeAudioData(buf, ok, bad));
+          found.push(slot);
+        } catch (e) { console.warn("Couldn't use audio/" + slot + ".mp3", e); }
+      }));
+      return found.sort();
+    },
+    get customSlots() { return Object.keys(FILES).sort(); }
   };
 })();

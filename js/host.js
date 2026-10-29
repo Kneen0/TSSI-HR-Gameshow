@@ -745,6 +745,14 @@
       nc.innerHTML = C.countries.filter((c) => t[c.id]).map((c) => `<span>${c.flag} ${t[c.id]}</span>`).join("");
     }
   }
+  /* 🎙 Talk: fade out whatever music is playing (sound effects still work) */
+  function talk() { if (Music.playing) { Music.stop(0.8); toast("🎙 Music faded — over to you"); } }
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $("#toast"); if (!t) return;
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+  }
   /* control-bar speaker: shows when the browser is blocking sound, so the host can't miss it */
   function syncSound() {
     const b = $("#ctlMute"); if (!b) return;
@@ -819,6 +827,20 @@
       try { navigator.clipboard.writeText(joinUrl()).then(() => done(true), () => done(false)); } catch (e) { done(false); }
       unfocus();
     };
+    /* music: mode cycle + talk button */
+    const MLABEL = { timer: "🎵 Timers", stings: "🎵 Stings", full: "🎵 Full" };
+    const MHELP = {
+      timer: "Talk-friendly: jingles + quiet music only while a clock is counting down",
+      stings: "Quietest: jingles and sound effects only — silent while you talk",
+      full: "Music almost all the time (loud rooms / no speaking)"
+    };
+    const syncMusic = () => { const b = $("#ctlMusic"); b.textContent = MLABEL[Music.mode]; b.title = "Music mode — " + MHELP[Music.mode] + " (click to change)"; };
+    $("#ctlMusic").onclick = () => {
+      const ms = Music.modes, nextMode = ms[(ms.indexOf(Music.mode) + 1) % ms.length];
+      Music.setMode(nextMode); syncMusic(); toast(MLABEL[nextMode] + " — " + MHELP[nextMode]); unfocus();
+    };
+    $("#ctlTalk").onclick = () => { talk(); unfocus(); };
+    syncMusic();
     const mode = $("#ctlMode");
     mode.textContent = window.TSSI_LIVE ? "🟢 Live" : window.TSSI_LIBFAIL ? "🔴 Offline" : "🟡 Demo";
     mode.title = window.TSSI_LIVE ? "Connected to Supabase — players can join from anywhere" : window.TSSI_LIBFAIL ? "Supabase script blocked — players can't connect" : "Demo mode: players must be tabs in this same browser";
@@ -828,6 +850,7 @@
       if (e.key === " " || e.key === "ArrowRight" || e.key === "PageDown") { e.preventDefault(); next(); unfocus(); }
       else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); back(); unfocus(); }
       else if (e.key === "m" || e.key === "M") $("#ctlMute").click();
+      else if (e.key === "t" || e.key === "T") talk();
       else if (e.key === "h" || e.key === "H") { document.body.classList.toggle("hide-ctl"); requestAnimationFrame(fitStage); }
       else if (e.key === "f" || e.key === "F") (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
     });
@@ -853,6 +876,12 @@
     S.deadline = 0;
     go(S.step, 1);
     setInterval(tick, 200);
+    // use any of your own tracks found in the /audio folder (see README)
+    Music.loadFiles("audio/").then((found) => {
+      if (!found.length) return;
+      toast("🎵 Using your music for: " + found.join(", "));
+      if (cur().k === "lobby") Music.play("lobby", true);
+    });
     setInterval(() => pub(true), 8000); // heartbeat so late/rejoining phones catch up
   }
 
