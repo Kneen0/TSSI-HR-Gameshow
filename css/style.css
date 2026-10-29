@@ -56,6 +56,9 @@ body.host:not(.running) .controls { display: none; }
 .controls .btn:disabled { opacity: .35; cursor: default; }
 .controls input[type=range] { width: 80px; accent-color: var(--gold); }
 .ctl-conn { color: var(--pink); font-weight: 800; }
+.toast { position: fixed; left: 50%; bottom: 62px; transform: translate(-50%, 20px); background: #0b0a24f2; border: 1px solid var(--gold); color: var(--ink); padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 40; max-width: 90vw; text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.hide-ctl .toast { bottom: 16px; }
 .controls .btn.icon.sound-off { width: auto; padding: 6px 12px; background: var(--pink); color: #fff; border-color: var(--pink); animation: bulbs 1.2s steps(2) infinite; }
 .hide-ctl .controls { display: none; }
 .controls b { color: var(--ink); }
@@ -369,3 +372,5 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .controls .ctl-mode, .controls .ctl-clock, .controls input[type=range] { display: none; }
 }
 @media (max-width: 1150px) { .controls .ctl-mode { display: none; } }
+@media (max-width: 1350px) { .controls .ctl-clock { display: none; } }
+@media (max-width: 900px) { #ctlMusic { display: none; } }
