@@ -745,8 +745,18 @@
       nc.innerHTML = C.countries.filter((c) => t[c.id]).map((c) => `<span>${c.flag} ${t[c.id]}</span>`).join("");
     }
   }
+  /* control-bar speaker: shows when the browser is blocking sound, so the host can't miss it */
+  function syncSound() {
+    const b = $("#ctlMute"); if (!b) return;
+    const blocked = !Music.ready;
+    b.classList.toggle("sound-off", blocked);
+    b.dataset.blocked = blocked ? "1" : "";
+    b.textContent = blocked ? "🔇 Tap for sound" : Music.muted ? "🔇" : "🔊";
+    b.title = blocked ? "Your browser is blocking sound — tap to turn it on" : "Mute (M)";
+  }
   function tick() {
     if (!S) return;
+    syncSound();
     const st = cur();
     if (S.deadline && (st.k === "q" || st.k === "pick")) {
       const total = (st.k === "pick" ? C.derby.pickSeconds : game().seconds) * 1000;
@@ -798,7 +808,12 @@
     $("#ctlPrev").onclick = () => { back(); unfocus(); };
     $("#ctlVol").oninput = (e) => Music.setVolume(+e.target.value);
     $("#ctlVol").onchange = unfocus;
-    $("#ctlMute").onclick = () => { $("#ctlMute").textContent = Music.toggleMute() ? "🔇" : "🔊"; unfocus(); };
+    $("#ctlMute").onclick = () => {
+      // if sound was blocked a moment ago, this tap only unlocks it (never mutes by accident)
+      if (!Music.ready || $("#ctlMute").dataset.blocked === "1") Music.init();
+      else Music.toggleMute();
+      syncSound(); unfocus();
+    };
     $("#ctlLink").onclick = () => {
       const done = (ok) => { $("#ctlLink").textContent = ok ? "✓ Copied" : "Copy failed"; setTimeout(() => ($("#ctlLink").textContent = "🔗 Join link"), 1500); };
       try { navigator.clipboard.writeText(joinUrl()).then(() => done(true), () => done(false)); } catch (e) { done(false); }

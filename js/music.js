@@ -16,8 +16,25 @@ window.Music = (function () {
   }
   const hz = (n) => 440 * Math.pow(2, (midi(n) - 69) / 12);
 
+  /* iPhone/iPad: by default Safari silences web-page sound when the ring/silent
+     switch is on. Declaring "playback" audio (Safari 17+) and looping a tiny silent
+     <audio> clip (older iOS) moves the page onto the media channel, like a video. */
+  const SILENT_WAV = "data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
+  let unlockEl = null;
+  function unlockIOS() {
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    try {
+      if (!unlockEl) {
+        unlockEl = document.createElement("audio");
+        unlockEl.src = SILENT_WAV; unlockEl.loop = true; unlockEl.setAttribute("playsinline", "");
+        unlockEl.setAttribute("x-webkit-airplay", "deny");
+      }
+      const p = unlockEl.play(); if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+  }
   function init() {
-    if (ctx) { if (ctx.state !== "running") ctx.resume(); return; }
+    unlockIOS();
+    if (ctx) { if (ctx.state !== "running") ctx.resume().catch(() => {}); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ctx = new AC();
@@ -28,6 +45,11 @@ window.Music = (function () {
     musicBus = ctx.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master);
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(master);
     applyVol();
+    if (ctx.state !== "running") ctx.resume().catch(() => {});
+    // browsers can suspend audio (tab switched, phone locked, call started): any tap brings it back
+    const wake = () => { if (ctx && ctx.state !== "running") { ctx.resume().catch(() => {}); unlockIOS(); } };
+    ["pointerdown", "keydown", "touchend"].forEach((ev) => document.addEventListener(ev, wake, { passive: true }));
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) wake(); });
   }
   function applyVol() { if (master) master.gain.value = muted ? 0 : volume; }
 
@@ -236,6 +258,7 @@ window.Music = (function () {
     getVolume() { return volume; },
     toggleMute() { muted = !muted; applyVol(); return muted; },
     get ready() { return !!ctx && ctx.state === "running"; },
+    get muted() { return muted; },
     songs: Object.keys(SONGS)
   };
 })();
