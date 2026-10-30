@@ -5,60 +5,52 @@
    ===================================================================== */
 window.CONTENT = {
 
-  countries: [
-    { id: "UK", flag: "🇬🇧", name: "UK" },
-    { id: "US", flag: "🇺🇸", name: "US" },
-    { id: "DE", flag: "🇩🇪", name: "Germany" },
-    { id: "CR", flag: "🇨🇷", name: "Costa Rica" },
-    { id: "XX", flag: "🌍", name: "Elsewhere" }
-  ],
-
   /* ---------------------------------------------------------------
      GAME 1 — LOST IN TRANSLATION  (multiple choice, speed bonus)
      Points: 500 for correct + up to 500 speed bonus.
      --------------------------------------------------------------- */
   translate: {
-    title: "Lost in Translation",
-    tagline: "Four countries. One language. Allegedly.",
+    title: "Jargon Buster",
+    tagline: "Corporate speak, decoded.",
     jingle: "translate",
     rules: [
-      "A word or phrase from 🇬🇧 🇺🇸 🇩🇪 or 🇨🇷 pops up",
-      "Tap the right meaning on your phone",
+      "A piece of office jargon pops up",
+      "Tap what it REALLY means on your phone",
       "Right answer = 500 pts, plus up to 500 for speed"
     ],
     poll: {
-      q: "Settle this once and for all — what is this? 🍪",
-      options: ["Biscuit 🇬🇧", "Cookie 🇺🇸", "Keks 🇩🇪", "Galleta 🇨🇷"]
+      q: "Most overused phrase in meetings?",
+      options: ["“Circle back”", "“Quick question”", "“You're on mute”", "“Let's take this offline”"]
     },
     seconds: 15,
     questions: [
-      { q: "A German colleague says she'll call you on her “Handy”. What is it?",
-        options: ["Her mobile phone", "Her toolbox", "Her bicycle", "Her desk diary"], answer: 0,
-        fact: "Germans borrowed an English-sounding word that no English speaker actually uses!" },
-      { q: "An American manager says “Let's table that”. What happens next?",
-        options: ["We discuss it right now", "We postpone it", "We put it in a spreadsheet", "We book a meeting room"], answer: 1,
-        fact: "In the UK, “tabling” an item means the OPPOSITE — putting it up for discussion now. Classic transatlantic meeting chaos." },
-      { q: "A British colleague is “chuffed” about the new policy. How do they feel?",
-        options: ["Furious", "Confused", "Really pleased", "Out of breath"], answer: 2,
-        fact: "“Chuffed to bits” = very happy indeed." },
-      { q: "What does the German word “Feierabend” mean?",
-        options: ["The office Christmas party", "Clocking off at the end of the working day", "A fire drill", "An annual bonus"], answer: 1,
-        fact: "Literally “celebration evening” — the sacred moment the working day ends." },
-      { q: "A Costa Rican colleague answers “How are you?” with “¡Pura vida!”. What do they mean?",
-        options: ["All good — life's great!", "I'm drinking pure juice", "I'm off on holiday", "The meeting's cancelled"], answer: 0,
-        fact: "“Pure life” — Costa Rica's national motto. It means hello, goodbye, thanks and “all good” all at once." },
-      { q: "A Brit books “a fortnight” of annual leave. How long are they away?",
-        options: ["4 days", "A long weekend", "14 days", "40 nights"], answer: 2,
-        fact: "From Old English “fourteen nights”. Most Americans have heard it — few say it." },
-      { q: "German “Kummerspeck” translates literally as…",
-        options: ["Grief bacon", "Worry sausage", "Sorrow soup", "Sad cheese"], answer: 0,
-        fact: "The weight you put on from comfort eating. Every language needs this word." },
-      { q: "A UK colleague says “I've spilt coffee on my pants!” Where's the coffee?",
-        options: ["On their trousers", "On their underwear", "On their laptop bag", "On their shoes"], answer: 1,
-        fact: "UK pants = underwear. US pants = trousers. Choose your words carefully on Teams." },
-      { q: "A German colleague calls your plan a “Schnapsidee”. What do they think of it?",
-        options: ["Brilliant and bold", "Crazy — the kind of idea you have after a few schnapps", "Expensive", "Very traditional"], answer: 1,
-        fact: "A “schnapps idea” sounds great at midnight and terrible on Monday morning." }
+      { q: "Someone says “Let's take this offline”. What do they mean?",
+        options: ["Switch off the Wi-Fi", "Talk about it later, outside this meeting", "Print it out", "Cancel the project"], answer: 1,
+        fact: "Translation: “please stop talking about this in front of everyone”." },
+      { q: "“We're not trying to boil the ocean here.” Meaning?",
+        options: ["Don't try to do everything at once", "Save energy in the kitchen", "Stay calm under pressure", "Book a team trip to the beach"], answer: 0,
+        fact: "Boiling the ocean = an impossibly huge task. Pick something smaller!" },
+      { q: "Your manager wants to go after the “low-hanging fruit”. What's that?",
+        options: ["The healthy snack basket", "The easiest wins", "The newest starters", "Anything overdue"], answer: 1,
+        fact: "Easy to reach, quick to pick — the quick wins." },
+      { q: "“I don't have the bandwidth for that.” What's missing?",
+        options: ["A faster internet connection", "A bigger budget", "Time or capacity", "A second monitor"], answer: 2,
+        fact: "Borrowed from networking. Humans also have limited bandwidth." },
+      { q: "A new starter says they're “drinking from a firehose”. How are they feeling?",
+        options: ["Overwhelmed with information", "Really thirsty", "Ready to put out fires", "Bored"], answer: 0,
+        fact: "Every first week, everywhere. Be kind to your new starters!" },
+      { q: "What does it mean to “move the needle”?",
+        options: ["Fix the office sewing kit", "Make a noticeable difference", "Change a deadline", "Reorganise the filing"], answer: 1,
+        fact: "From the needle on a dial — if it doesn't move, nothing changed." },
+      { q: "Someone suggests some “blue-sky thinking”. What do they want?",
+        options: ["A meeting outside", "Worst-case planning", "Big, creative ideas with no limits", "A weather update"], answer: 2,
+        fact: "No constraints, no budgets… until the next meeting." },
+      { q: "“Let's circle back on this.” What happens now?",
+        options: ["We come back to it later", "We vote on it", "We go round the room", "We start again from scratch"], answer: 0,
+        fact: "Also known as: we may never speak of this again." },
+      { q: "What's a “hard stop”?",
+        options: ["A difficult conversation", "A meeting that must end on time", "A firm no", "A broken office chair"], answer: 1,
+        fact: "“I've got a hard stop at 3” = I'm leaving at 3, whatever happens." }
     ]
   },
 
@@ -78,8 +70,8 @@ window.CONTENT = {
       "Right = 500 pts, +100 for every call in a row 🔥"
     ],
     poll: {
-      q: "Which nation has the best poker face? 🃏",
-      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans", "🇨🇷 The Ticos"]
+      q: "Who has the best poker face? 🃏",
+      options: ["Me, obviously 😐", "My manager", "The finance team", "Nobody — my face says everything"]
     },
     seconds: 10,
     rows: 2,          // two rows ("hands") of cards
@@ -103,29 +95,29 @@ window.CONTENT = {
       "Bang on the exact price? 2000 pts!"
     ],
     poll: {
-      q: "Which nation has the best bargain hunters?",
-      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans", "🇨🇷 The Ticos"]
+      q: "Who's the best bargain hunter?",
+      options: ["Me, obviously", "My manager", "The finance team", "Whoever finds the free snacks"]
     },
     seconds: 25,
     items: [
       { emoji: "🎩", name: "The most expensive square on the Monopoly board",
-        detail: "Mayfair 🇬🇧 · Boardwalk 🇺🇸 · Schlossallee 🇩🇪 — same price in £, $ and €!",
-        currency: "", answer: 400, fact: "All three editions charge 400 for the top square." },
-      { emoji: "🚗", name: "A brand-new Mini at its UK launch in 1959",
-        detail: "Price in pounds sterling", currency: "£", answer: 497,
-        fact: "The original Mini went on sale for around £497." },
-      { emoji: "📱", name: "The very first iPhone (4GB) at its US launch in 2007",
-        detail: "Price in US dollars", currency: "$", answer: 499,
-        fact: "$499 — just two more than that 1959 Mini, in a different currency!" },
-      { emoji: "🚙", name: "A brand-new VW Golf at its German launch in 1974",
-        detail: "Price in Deutsche Mark", currency: "DM", answer: 7995,
-        fact: "The first Golf cost about 7,995 DM." },
-      { emoji: "🎟️", name: "Top-price ticket to see The Beatles at Shea Stadium, New York, 1965",
-        detail: "Price in US dollars (decimals allowed)", currency: "$", answer: 5.65,
-        fact: "The best seats were $5.65." },
-      { emoji: "🚘", name: "A Ford Model T 'Runabout' in 1925",
-        detail: "Price in US dollars", currency: "$", answer: 260,
-        fact: "Mass production pushed the price down to about $260." }
+        detail: "The dark blue square just before GO",
+        currency: "", answer: 400, fact: "400 — the priciest square in the classic game." },
+      { emoji: "📱", name: "The very first iPhone (4GB) at launch in 2007",
+        detail: "Launch price in US dollars", currency: "$", answer: 499,
+        fact: "$499 — and people thought that was a lot for a phone!" },
+      { emoji: "🎮", name: "The original Nintendo Game Boy at launch in 1989",
+        detail: "Launch price in US dollars (decimals allowed)", currency: "$", answer: 89.99,
+        fact: "$89.99 — with Tetris in the box." },
+      { emoji: "🎧", name: "The first Apple iPod (5GB) at launch in 2001",
+        detail: "Launch price in US dollars", currency: "$", answer: 399,
+        fact: "$399 for “1,000 songs in your pocket”." },
+      { emoji: "🕹️", name: "The original Sony PlayStation at launch in 1995",
+        detail: "Launch price in US dollars", currency: "$", answer: 299,
+        fact: "Sony announced $299 in a famous one-word keynote: “299”." },
+      { emoji: "💵", name: "How much you collect for passing GO in Monopoly",
+        detail: "Classic edition", currency: "", answer: 200,
+        fact: "200 — the most reliable pay rise in the history of board games." }
     ]
   },
 
@@ -145,15 +137,15 @@ window.CONTENT = {
       "Your horse wins = big points. 2nd place = 200"
     ],
     poll: {
-      q: "Which is the greatest horse race on earth?",
-      options: ["🇬🇧 Royal Ascot", "🇺🇸 Kentucky Derby", "🇩🇪 Deutsches Derby", "🇨🇷 El Tope, San José"]
+      q: "Best racehorse name in today's field?",
+      options: ["Tea Break", "Payroll Thunder", "Annual Leave", "Home Time Hero"]
     },
     pickSeconds: 20,
     races: 2,
     horses: [
       { name: "Tea Break",         color: "#e63946", odds: 2, pays: 600 },
       { name: "Casual Friday",     color: "#457b9d", odds: 3, pays: 800 },
-      { name: "Feierabend Flyer",  color: "#f4a261", odds: 3, pays: 800 },
+      { name: "Home Time Hero"  ,  color: "#f4a261", odds: 3, pays: 800 },
       { name: "Annual Leave",      color: "#2a9d8f", odds: 4, pays: 1000 },
       { name: "Probation Pony",    color: "#9b5de5", odds: 6, pays: 1400 },
       { name: "Payroll Thunder",   color: "#ffd166", odds: 8, pays: 1800 }
@@ -177,21 +169,21 @@ window.CONTENT = {
      number for every answer that's on the board.
      TIP: run a 1-question MS Form in advance and replace these with
      your real numbers — it makes the reveal brilliant.
-     'aliases' are the words/phrases that count as a match (English
-     and German welcome). Matching is forgiving of small typos.
+     'aliases' are the words/phrases that count as a match (any
+     language welcome). Matching is forgiving of small typos.
      --------------------------------------------------------------- */
   fortunes: {
     title: "Work Family Fortunes",
     tagline: "We asked 100 colleagues… our survey said!",
     jingle: "fortunes",
     rules: [
-      "We surveyed colleagues across 🇬🇧 🇺🇸 🇩🇪 🇨🇷",
-      "Type up to 3 answers — English, Deutsch or Español!",
+      "We asked 100 colleagues — the top 6 answers are on the board",
+      "Type up to 3 answers on your phone",
       "Score 10 pts for every person who said it"
     ],
     poll: {
       q: "Survey says… what's the ultimate lunch?",
-      options: ["🇬🇧 Fish & chips", "🇺🇸 Burger", "🇩🇪 Currywurst", "🇨🇷 Casado"]
+      options: ["🥪 Sandwich", "🍕 Pizza", "🥗 Salad", "🍱 Last night's leftovers"]
     },
     seconds: 40,
     maxAnswers: 3,
@@ -253,7 +245,7 @@ window.CONTENT = {
     ],
     poll: {
       q: "Best fairground treat?",
-      options: ["🇬🇧 Candyfloss", "🇺🇸 Corn dog", "🇩🇪 Gebrannte Mandeln", "🇨🇷 Churchill (shaved ice)"]
+      options: ["🍭 Candyfloss", "🍎 Toffee apple", "🌭 Hot dog", "🍩 Doughnuts"]
     },
     finish: 40,        // points needed to reach the finishing post
     seconds: 75,       // the race stops after this, even if nobody has finished
@@ -281,7 +273,7 @@ window.CONTENT = {
     ],
     poll: {
       q: "Who'd survive best behind the Wall?",
-      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans", "🇨🇷 The Ticos"]
+      options: ["Me, obviously 💪", "My manager", "Whoever's always on mute", "Nobody — it's brutal"]
     },
     seconds: 15,        // time to answer each question
     zoneSeconds: 8,     // time to pick a drop zone
@@ -290,11 +282,11 @@ window.CONTENT = {
     // the 15 slots at the bottom of the Wall (left → right). Big values sit right next to tiny ones!
     values: [1, 200, 40, 800, 5, 400, 1, 1000, 1, 400, 5, 800, 40, 200, 1],
     questions: [
-      { q: "Which German city is home to Oktoberfest?", options: ["Berlin", "Munich", "Hamburg"], answer: 1 },
-      { q: "How many days of paid holiday is a full-time UK worker legally entitled to each year (including bank holidays)?", options: ["20 days", "25 days", "28 days"], answer: 2 },
-      { q: "Costa Rica famously abolished its army — in which year?", options: ["1948", "1968", "1989"], answer: 0 },
-      { q: "How many time zones does the mainland USA (the 'lower 48') span?", options: ["3", "4", "5"], answer: 1 },
-      { q: "In the UK the last letter of the alphabet is “zed”. What is it in the US?", options: ["Zee", "Zed", "Zett"], answer: 0 }
+      { q: "How many keys are on a standard piano?", options: ["76", "88", "96"], answer: 1 },
+      { q: "How many minutes are there in a day?", options: ["1,240", "1,440", "1,640"], answer: 1 },
+      { q: "What is the largest ocean on Earth?", options: ["Atlantic", "Indian", "Pacific"], answer: 2 },
+      { q: "How many bones are in the adult human body?", options: ["186", "206", "226"], answer: 1 },
+      { q: "In an email, what did “CC” originally stand for?", options: ["Carbon copy", "Company contact", "Central copy"], answer: 0 }
     ]
   },
 

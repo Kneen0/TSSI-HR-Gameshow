@@ -3,8 +3,7 @@ window.U = (function () {
   const C = window.CONTENT;
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const $ = (sel, root) => (root || document).querySelector(sel);
-  const OTHER = () => C.countries.find((c) => c.id === "XX") || C.countries[C.countries.length - 1];
-  const flag = (id) => (C.countries.find((c) => c.id === id) || OTHER()).flag;
+  const flag = () => "";   // flags removed: where people live doesn't matter
   const fmt = (n) => Math.round(n).toLocaleString("en-GB");
   /* number with up to 2 decimals, e.g. 7,995 or 5.65 */
   const num = (v) => (Math.round(v * 100) / 100).toLocaleString("en-GB", { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
@@ -64,30 +63,12 @@ window.U = (function () {
     return bestScore < 99 ? best : -1;
   }
 
-  /* ---- leaderboard / country battle ---- */
+  /* ---- leaderboard ---- */
   function ranked(players) {
     return Object.entries(players).map(([id, p]) => Object.assign({ id }, p))
       .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
   }
-  function countryTable(players) {
-    const t = {};
-    Object.values(players).forEach((p) => {
-      const k = p.country || "XX";
-      t[k] = t[k] || { id: k, total: 0, n: 0 };
-      t[k].total += p.score; t[k].n++;
-    });
-    return Object.values(t).map((c) => Object.assign(c, { avg: c.n ? c.total / c.n : 0 }))
-      .sort((a, b) => b.avg - a.avg);
-  }
-  function countryBars(players) {
-    const rows = countryTable(players);
-    const max = Math.max(1, ...rows.map((r) => r.avg));
-    return '<div class="nations">' + rows.map((r) => {
-      const c = C.countries.find((x) => x.id === r.id) || OTHER();
-      return `<div class="nation"><span class="nflag">${c.flag}</span><span class="nname">${esc(c.name)} <small>(${r.n})</small></span>
-        <span class="nbar"><i style="width:${Math.max(4, (r.avg / max) * 100)}%"></i></span><b>${fmt(r.avg)}</b></div>`;
-    }).join("") + '<div class="nnote">Average points per player — so every nation can win</div></div>';
-  }
+
 
   /* ---- playing cards (Play Your Cards Bright) ---- */
   const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
@@ -107,5 +88,5 @@ window.U = (function () {
     return `<div class="pcard face ${red ? "red" : ""} ${cls || ""}" aria-label="${cardName(c)}"><span class="cr">${RANKS[c[0]]}<br>${SUITS[c[1]]}</span><span class="cs">${SUITS[c[1]]}</span><span class="cr cr2">${RANKS[c[0]]}<br>${SUITS[c[1]]}</span></div>`;
   }
 
-  return { esc, $, flag, fmt, num, parseNum, uid, deal, cardHtml, cardName, RANK_NAMES, roomCode, norm, matchSurvey, ranked, countryTable, countryBars };
+  return { esc, $, flag, fmt, num, parseNum, uid, deal, cardHtml, cardName, RANK_NAMES, roomCode, norm, matchSurvey, ranked };
 })();

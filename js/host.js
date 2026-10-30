@@ -5,7 +5,7 @@
    ===================================================================== */
 (function () {
   const C = window.CONTENT, CFG = window.TSSI_CONFIG || {};
-  const { esc, $, flag, fmt, num, ranked, countryBars, matchSurvey } = U;
+  const { esc, $, fmt, num, ranked, matchSurvey } = U;
   const stage = $("#stage");
   const PLAN = { lobby: 5, cards: 8, wall: 9, translate: 8, price: 9, derby: 9, fortunes: 10, rollball: 8, final: 3 }; // minutes
   const RACE_LEN = 1300;
@@ -62,7 +62,6 @@
   const cardPos = (i) => [Math.floor(i / (C.cards.perRow - 1)), i % (C.cards.perRow - 1)];
   const ensureDeck = () => { if (!S.deck) { S.deck = U.deal(C.cards.rows, C.cards.perRow); S.streak = {}; } };
   const pname = (id) => (S.players[id] ? S.players[id].name : "");
-  const pflag = (id) => flag(S.players[id] && S.players[id].country);
 
   /* ---------------- messaging ---------------- */
   function onMsg(m) {
@@ -71,7 +70,7 @@
     if (m.t === "join") {
       if (S.kicked[m.id]) return pubSoon();
       const name = String(m.name || "Player").replace(/\s+/g, " ").trim().slice(0, 18) || "Player";
-      const country = C.countries.some((c) => c.id === m.country) ? m.country : "XX";
+      const country = "";
       if (!S.players[m.id]) {
         const taken = new Set(Object.values(S.players).map((p) => p.name.toLowerCase()));
         let n = name, k = 2; while (taken.has(n.toLowerCase())) n = name.slice(0, 15) + " " + k++;
@@ -297,7 +296,7 @@
         <div class="lobby-left">
           <div class="marquee-title"><span>${esc(CFG.EVENT_TITLE || "Global HR Social Connect")}</span></div>
           <h1 class="show-name">THE BIG <em>HR</em> GAME SHOW</h1>
-          <p class="hello">Hello 🇬🇧 · Howdy 🇺🇸 · Hallo 🇩🇪 · ¡Hola! 🇨🇷 — grab your phone (or open a new browser tab)!</p>
+          <p class="hello">Grab your phone (or open a new browser tab) and join the game!</p>
           <div class="join-box">
             <div id="qr" class="qr"></div>
             <div class="join-info">
@@ -310,7 +309,6 @@
         </div>
         <div class="lobby-right">
           <div class="lobby-count"><b id="pcount">0</b> <span id="pword">players</span> in the studio</div>
-          <div id="nationCount" class="nation-count"></div>
           <div id="chips" class="chips"><p class="empty-chips">Waiting for the first contestant…</p></div>
           <div id="chipMore" class="chip-more"></div>
           <p class="hint">Click a name to remove it</p>
@@ -327,7 +325,7 @@
     const empty = box.querySelector(".empty-chips"); if (empty) empty.remove();
     const el = document.createElement("button");
     el.className = "chip"; el.dataset.id = id; el.title = "Remove " + p.name;
-    el.innerHTML = `${flag(p.country)} ${esc(p.name)}`;
+    el.innerHTML = `${esc(p.name)}`;
     el.onclick = () => {
       if (!confirm("Remove " + p.name + " from the game?")) return;
       S.kicked[id] = true; delete S.players[id]; el.remove(); updateCounts(); save(); pub(true);
@@ -412,9 +410,9 @@
     }
     if (st.g === "fortunes") {
       const q = g.questions[st.i];
-      body = `<div class="survey-intro">We asked 100 colleagues across 🇬🇧 🇺🇸 🇩🇪 🇨🇷…</div><h2 class="qtext big">${esc(q.q)}</h2>
+      body = `<div class="survey-intro">We asked 100 colleagues…</div><h2 class="qtext big">${esc(q.q)}</h2>
         <div class="fboard">${q.answers.map((_, i) => `<div class="fslot hidden"><span class="fnum">${i + 1}</span><span class="ftext"></span><span class="fpts"></span></div>`).join("")}</div>
-        <p class="detail center">Type up to ${g.maxAnswers} answers on your phone — English, Deutsch or Español!</p>`;
+        <p class="detail center">Type up to ${g.maxAnswers} answers on your phone!</p>`;
     }
     stage.innerHTML = `<div class="question">${head(`${esc(g.title)} · ${st.i + 1}/${qCount(st.g)}`, answered("in"))}${body}</div>`;
   }
@@ -438,7 +436,7 @@
             <div class="hlbox higher ${res === 1 ? "win" : ""}"><b>⬆ HIGHER</b><span class="hlbar"><i style="width:${(hi / tot) * 100}%"></i></span><span class="hln">${hi}</span></div>
             <div class="hlbox lower ${res === 0 ? "win" : ""}"><b>⬇ LOWER</b><span class="hlbar"><i style="width:${(lo / tot) * 100}%"></i></span><span class="hln">${lo}</span></div>
           </div>
-          ${fire.length ? `<div class="shout">🔥 On fire: ${fire.map(([id, n]) => `${pflag(id)} <b>${esc(pname(id))}</b> (${n} in a row)`).join(" · ")}</div>` : ""}
+          ${fire.length ? `<div class="shout">🔥 On fire: ${fire.map(([id, n]) => `<b>${esc(pname(id))}</b> (${n} in a row)`).join(" · ")}</div>` : ""}
           ${miniBoard()}
         </div></div>`;
       Music.sfx("drumroll");
@@ -454,7 +452,7 @@
         <h2 class="qtext">${esc(q.q)}</h2>
         <div class="opts">${q.options.map((o, i) => `<div class="opt o${i} ${i === q.answer ? "right" : "wrong"}"><span class="ol">${i === q.answer ? "✓" : "ABCD"[i]}</span><span class="otext">${esc(o)}</span><span class="ocount"><span class="obar"><i style="width:${(c[i] / max) * 100}%"></i></span>${c[i]}</span></div>`).join("")}</div>
         <div class="fact">💡 ${esc(q.fact)}</div>
-        ${sn.fastest && S.players[sn.fastest] ? `<div class="shout">⚡ Fastest finger: ${pflag(sn.fastest)} <b>${esc(pname(sn.fastest))}</b></div>` : ""}
+        ${sn.fastest && S.players[sn.fastest] ? `<div class="shout">⚡ Fastest finger: <b>${esc(pname(sn.fastest))}</b></div>` : ""}
         ${miniBoard()}</div>`;
       Music.sfx("ding");
     }
@@ -465,7 +463,7 @@
         <div class="price-tag" id="ptag">${esc(it.currency)} ???</div></div>
         <div id="pres" class="pres hidden">
           <div class="fact">💡 ${esc(it.fact)}</div>
-          ${rows.length ? `<div class="guesses">${rows.map((r, i) => `<div class="guess ${r.over ? "over" : ""}"><span class="grank">${i + 1}</span><span class="gname">${pflag(r.id)} ${esc(pname(r.id) || "?")}</span><b>${esc(it.currency)}${num(r.v)}</b>${r.over ? "<em>OVER!</em>" : `<em>+${fmt((sn.deltas || {})[r.id] || 0)}</em>`}</div>`).join("")}</div>` : `<p class="center">No guesses this time!</p>`}
+          ${rows.length ? `<div class="guesses">${rows.map((r, i) => `<div class="guess ${r.over ? "over" : ""}"><span class="grank">${i + 1}</span><span class="gname">${esc(pname(r.id) || "?")}</span><b>${esc(it.currency)}${num(r.v)}</b>${r.over ? "<em>OVER!</em>" : `<em>+${fmt((sn.deltas || {})[r.id] || 0)}</em>`}</div>`).join("")}</div>` : `<p class="center">No guesses this time!</p>`}
         </div></div>`;
       Music.sfx("drumroll");
       later(() => {
@@ -563,7 +561,7 @@
   function miniBoard() {
     const top = Object.entries(S.deltas).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([, v]) => v > 0);
     if (!top.length) return "";
-    return `<div class="mini"><span class="mini-label">This round:</span>${top.map(([id, v]) => `<span>${pflag(id)} ${esc(pname(id))} <b>+${fmt(v)}</b></span>`).join("")}</div>`;
+    return `<div class="mini"><span class="mini-label">This round:</span>${top.map(([id, v]) => `<span>${esc(pname(id))} <b>+${fmt(v)}</b></span>`).join("")}</div>`;
   }
 
   /* ---------------- Desk Derby ---------------- */
@@ -736,7 +734,7 @@
     stage.innerHTML = `<div class="question">${head(`${esc(g.title)} · Race ${st.i + 1} result`)}
       <div class="podium-race">${[1, 0, 2].map((i) => { const h = sn.order[i]; return h == null ? "" : `<div class="pr p${i + 1}" style="--c:${g.horses[h].color}"><span class="medal">${["🥇", "🥈", "🥉"][i]}</span><b>${esc(g.horses[h].name)}</b><span>${g.horses[h].odds}/1</span></div>`; }).join("")}</div>
       <div class="fact">${W.length ? `🎉 ${W.length} ${W.length === 1 ? "punter" : "punters"} backed the winner and collect <b>${fmt(g.horses[sn.order[0]].pays)}</b>: ${W.slice(0, 8).map((id) => esc(pname(id))).join(", ")}${W.length > 8 ? ` +${W.length - 8} more` : ""}` : "😱 Nobody backed the winner! The bookies are delighted."}</div>
-      ${sn.cheer && S.players[sn.cheer[0]] ? `<div class="shout">📣 Loudest in the grandstand: ${pflag(sn.cheer[0])} <b>${esc(pname(sn.cheer[0]))}</b> (${fmt(sn.cheer[1])} cheers)</div>` : ""}
+      ${sn.cheer && S.players[sn.cheer[0]] ? `<div class="shout">📣 Loudest in the grandstand: <b>${esc(pname(sn.cheer[0]))}</b> (${fmt(sn.cheer[1])} cheers)</div>` : ""}
       ${miniBoard()}</div>`;
   }
 
@@ -809,7 +807,7 @@
       let el = tr.querySelector(`.rbrow[data-id="${x.id}"]`);
       if (!el) {
         el = document.createElement("div"); el.className = "rbrow"; el.dataset.id = x.id;
-        el.innerHTML = `<span class="rbname"><b class="rbrank"></b>${pflag(x.id)} ${esc(pname(x.id))}</span><span class="rbhorse"><b>🏇</b></span><span class="rbpts"></span>`;
+        el.innerHTML = `<span class="rbname"><b class="rbrank"></b>${esc(pname(x.id))}</span><span class="rbhorse"><b>🏇</b></span><span class="rbpts"></span>`;
         tr.appendChild(el);
       }
       el.style.setProperty("--r", i);
@@ -856,7 +854,7 @@
     const top = sn.rank.slice(0, 3).filter((id) => (sn.d[id] || 0) > 0);
     Music.sfx("fanfare");
     stage.innerHTML = `<div class="question">${head(`${esc(RB.title)} · ${RB.races > 1 ? `Race ${st.i + 1} ` : ""}result`)}
-      <div class="podium-race">${[1, 0, 2].map((i) => { const id = top[i]; return id ? `<div class="pr p${i + 1}" style="--c:${["#ffd166", "#c0c6d4", "#d08a4b"][i]}"><span class="medal">${["🥇", "🥈", "🥉"][i]}</span><b>${pflag(id)} ${esc(pname(id))}</b><span>${sn.fin.includes(id) ? "🏁 finished" : sn.d[id] + " pts"} · +${fmt(RB.prizes[i] || 0)}</span></div>` : ""; }).join("")}</div>
+      <div class="podium-race">${[1, 0, 2].map((i) => { const id = top[i]; return id ? `<div class="pr p${i + 1}" style="--c:${["#ffd166", "#c0c6d4", "#d08a4b"][i]}"><span class="medal">${["🥇", "🥈", "🥉"][i]}</span><b>${esc(pname(id))}</b><span>${sn.fin.includes(id) ? "🏁 finished" : sn.d[id] + " pts"} · +${fmt(RB.prizes[i] || 0)}</span></div>` : ""; }).join("")}</div>
       <div class="fact">${sn.fin.length ? `🏁 ${sn.fin.length} ${sn.fin.length === 1 ? "horse" : "horses"} reached the finishing post.` : "⏱ Time's up! Nobody made it to the post — the leaders take the prizes."} Everyone scores ${RB.perPoint} pts for every step their horse moved.</div>
       ${miniBoard()}</div>`;
   }
@@ -992,8 +990,8 @@
     if (wd.phase === "fall") { el.innerHTML = `<div class="fact">🟢 Here they come…</div>`; return; }
     const hits = Object.entries(wd.drops).sort((a, b) => b[1][2] - a[1][2]).slice(0, 4);
     const lead = Object.entries(S.wb).filter(([id]) => S.players[id]).sort((a, b) => b[1].b - a[1].b).slice(0, 5);
-    el.innerHTML = `<div class="fact">🎯 ${hits.length > 1 ? "Top drops" : "The drop"}: ${hits.map(([id, d]) => `${pflag(id)} <b>${esc(pname(id))}</b> ${fmt(d[2])}`).join(" · ")}</div>
-      <div class="banks"><span class="mini-label">Bank leaders</span>${lead.map(([id, p], i) => `<span>${i + 1}. ${pflag(id)} ${esc(pname(id))} <b>${fmt(p.b)}</b></span>`).join("")}</div>`;
+    el.innerHTML = `<div class="fact">🎯 ${hits.length > 1 ? "Top drops" : "The drop"}: ${hits.map(([id, d]) => `<b>${esc(pname(id))}</b> ${fmt(d[2])}`).join(" · ")}</div>
+      <div class="banks"><span class="mini-label">Bank leaders</span>${lead.map(([id, p], i) => `<span>${i + 1}. ${esc(pname(id))} <b>${fmt(p.b)}</b></span>`).join("")}</div>`;
   }
   function wallTick() {
     const wd = S.wd; if (!wd) return;
@@ -1050,7 +1048,7 @@
       const torn = rows.filter(([, r]) => !r.signed), brave = torn.filter(([, r]) => r.after > r.g).length;
       const el = $("#wrInfo"); if (!el) return;
       $(".wq").textContent = "🧾 The Contract reveal";
-      el.innerHTML = `<div class="contract-table">${rows.slice(0, 8).map(([id, r]) => `<div class="crow"><span class="cname">${pflag(id)} ${esc(pname(id))}</span><span class="cdec ${r.signed ? "s" : "t"}">${r.signed ? "✍️ signed" : "🔥 tore it up"}</span><span class="cbank">${fmt(r.b)} → ${fmt(r.after)}</span><b>+${fmt(r.pay)}</b></div>`).join("")}</div>
+      el.innerHTML = `<div class="contract-table">${rows.slice(0, 8).map(([id, r]) => `<div class="crow"><span class="cname">${esc(pname(id))}</span><span class="cdec ${r.signed ? "s" : "t"}">${r.signed ? "✍️ signed" : "🔥 tore it up"}</span><span class="cbank">${fmt(r.b)} → ${fmt(r.after)}</span><b>+${fmt(r.pay)}</b></div>`).join("")}</div>
         ${rows.length > 8 ? `<p class="lb-more">+ ${rows.length - 8} more on your phones</p>` : ""}
         <div class="fact">✍️ ${signed.length} signed — ${wise} of them were right to! · 🔥 ${torn.length} tore it up — ${brave} beat the contract!</div>`;
       Music.sfx("fanfare"); Music.sfx("applause");
@@ -1069,12 +1067,11 @@
     const show = r.slice(0, 10);
     stage.innerHTML = `<div class="board">
       <h1 class="board-title">Leaderboard <small>after ${esc(C[st.g].title)}</small></h1>
-      <div class="board-grid">
+      <div class="board-grid solo">
         <div>
-          <ol class="lb">${show.map((p, i) => `<li style="animation-delay:${(show.length - 1 - i) * 0.12}s"><span class="rk">${i + 1}</span><span class="nm">${flag(p.country)} ${esc(p.name)}</span><span class="gain">${p.g[st.g] ? "+" + fmt(p.g[st.g]) : ""}</span><b>${fmt(p.score)}</b></li>`).join("") || `<li class="lb-empty">No players yet</li>`}</ol>
+          <ol class="lb">${show.map((p, i) => `<li style="animation-delay:${(show.length - 1 - i) * 0.12}s"><span class="rk">${i + 1}</span><span class="nm">${esc(p.name)}</span><span class="gain">${p.g[st.g] ? "+" + fmt(p.g[st.g]) : ""}</span><b>${fmt(p.score)}</b></li>`).join("") || `<li class="lb-empty">No players yet</li>`}</ol>
           ${r.length > show.length ? `<p class="lb-more">+ ${r.length - show.length} more — see the full table on your phone 🏆</p>` : ""}
         </div>
-        <div class="card"><h3>🌍 Battle of the Nations</h3>${countryBars(S.players)}</div>
       </div>
       <p class="next-up">${st.backup ? "Next up: <b>back to the show</b> 🎬" : nextG ? `Next up: <b>${esc(C[nextG].title)}</b>` : "Next up: <b>The Grand Finale</b> 🏆"}</p></div>`;
   }
@@ -1084,19 +1081,16 @@
     Music.stop(0.2);
     const award = (g, label, icon) => {
       const best = r.slice().sort((a, b) => (b.g[g] || 0) - (a.g[g] || 0))[0];
-      return best && best.g[g] ? `<div class="award"><span class="aicon">${icon}</span><span class="alabel">${label}</span><b>${flag(best.country)} ${esc(best.name)}</b></div>` : "";
+      return best && best.g[g] ? `<div class="award"><span class="aicon">${icon}</span><span class="alabel">${label}</span><b>${esc(best.name)}</b></div>` : "";
     };
-    const nations = U.countryTable(S.players);
-    const champ = nations.length > 1 && nations[0].avg > 0 && C.countries.find((c) => c.id === nations[0].id);
     stage.innerHTML = `<div class="final">
       <h1 class="board-title">🏆 The Grand Finale 🏆</h1>
       <div class="podium">
-        ${[1, 0, 2].map((i) => top[i] ? `<div class="pod p${i + 1} hidden" data-r="${i}"><div class="pname">${flag(top[i].country)} ${esc(top[i].name)}</div><div class="podscore">${fmt(top[i].score)}</div><div class="block">${i + 1}</div></div>` : "").join("")}
+        ${[1, 0, 2].map((i) => top[i] ? `<div class="pod p${i + 1} hidden" data-r="${i}"><div class="pname">${esc(top[i].name)}</div><div class="podscore">${fmt(top[i].score)}</div><div class="block">${i + 1}</div></div>` : "").join("")}
       </div>
       <div id="finalExtra" class="hidden">
-        ${champ ? `<div class="champ">Nation champions: ${champ.flag} <b>${esc(champ.name)}</b>!</div>` : ""}
-        <div class="awards">${gamesPlayed().map((g) => award(g, ...({ cards: ["Card Sharp", "🃏"], translate: ["Polyglot Prize", "🗣️"], price: ["Bargain Hunter", "🏷️"], derby: ["Lucky Punter", "🏇"], fortunes: ["Survey Whisperer", "📋"], rollball: ["Golden Arm", "🎯"], wall: ["Wall Whisperer", "🧱"] }[g] || [C[g].title, "⭐"]))).join("")}</div>
-        <p class="thanks">Thank you · Danke · ¡Gracias! · Thanks y'all! 👋</p>
+        <div class="awards">${gamesPlayed().map((g) => award(g, ...({ cards: ["Card Sharp", "🃏"], translate: ["Jargon Buster", "💬"], price: ["Bargain Hunter", "🏷️"], derby: ["Lucky Punter", "🏇"], fortunes: ["Survey Whisperer", "📋"], rollball: ["Golden Arm", "🎯"], wall: ["Wall Whisperer", "🧱"] }[g] || [C[g].title, "⭐"]))).join("")}</div>
+        <p class="thanks">Thank you for playing! 👋</p>
       </div></div>`;
     const show = (i, d) => later(() => { const el = stage.querySelector(`.pod[data-r="${i}"]`); if (el) { el.classList.remove("hidden"); Music.sfx("ding"); } }, d);
     Music.sfx("drumroll"); show(2, 2100);
@@ -1114,7 +1108,7 @@
     if (!CFG.SAVE_RESULTS || !window.TSSI_LIVE || S.resultsSaved || !r.length) return;
     S.resultsSaved = true; save();
     try {
-      const rows = r.map((p, i) => ({ room: S.room, player_name: p.name, country: p.country, score: p.score, rank: i + 1, breakdown: p.g }));
+      const rows = r.map((p, i) => ({ room: S.room, player_name: p.name, country: null, score: p.score, rank: i + 1, breakdown: p.g }));
       const { error } = await window.TSSI_DB.from("game_results").insert(rows);
       if (error) console.warn("Results not saved:", error.message);
     } catch (e) { console.warn(e); }
@@ -1150,11 +1144,6 @@
       set("#hiN", hi); set("#loN", lo);
       const hb = $("#hiBar"), lb = $("#loBar");
       if (hb) hb.style.width = (hi / tot) * 100 + "%"; if (lb) lb.style.width = (lo / tot) * 100 + "%";
-    }
-    const nc = $("#nationCount");
-    if (nc) {
-      const t = {}; Object.values(S.players).forEach((p) => (t[p.country] = (t[p.country] || 0) + 1));
-      nc.innerHTML = C.countries.filter((c) => t[c.id]).map((c) => `<span>${c.flag} ${t[c.id]}</span>`).join("");
     }
   }
   /* 🎙 Talk: fade out whatever music is playing (sound effects still work) */

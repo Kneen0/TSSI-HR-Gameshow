@@ -4,11 +4,11 @@
    ===================================================================== */
 (function () {
   const C = window.CONTENT;
-  const { esc, $, flag, fmt, num } = U;
+  const { esc, $, fmt, num } = U;
   const app = $("#app");
   const params = new URLSearchParams(location.search);
 
-  let me = null;           // {id, name, country, room}
+  let me = null;           // {id, name, room}
   let T = null, S = null;  // transport, latest host state
   let deadline = 0, lastStep = -1, lastJoin = 0;
   let local = {};          // what I've done this step: {step, v, list, done, pick}
@@ -38,17 +38,10 @@
         ${msg ? `<p class="warn">${esc(msg)}</p>` : ""}
         <label>Room code<input id="jRoom" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" value="${esc(urlRoom || (me && me.room) || "")}" placeholder="ABCD"></label>
         <label>Your name<input id="jName" maxlength="18" autocorrect="off" value="${esc(me ? me.name : "")}" placeholder="First name + initial"></label>
-        <div class="label">Where are you joining from?</div>
-        <div class="flags">${C.countries.map((c) => `<button type="button" class="flagbtn${me && me.country === c.id ? " on" : ""}" data-c="${c.id}" aria-pressed="${me && me.country === c.id}"><span>${c.flag}</span>${esc(c.name)}</button>`).join("")}</div>
         <p id="jErr" class="warn" hidden></p>
-        <button id="jGo" type="submit" class="btn big">Let's play! · Los geht's!</button>
+        <button id="jGo" type="submit" class="btn big">Let's play!</button>
         ${window.TSSI_LIBFAIL ? '<p class="warn">Can\'t reach the game server from this network — try mobile data instead of office Wi-Fi/VPN.</p>' : window.TSSI_LIVE ? "" : '<p class="hint center">Demo mode — this tab must be in the same browser as the host screen.</p>'}
       </form>`;
-    let country = me ? me.country : null;
-    app.querySelectorAll(".flagbtn").forEach((b) => (b.onclick = () => {
-      country = b.dataset.c;
-      app.querySelectorAll(".flagbtn").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
-    }));
     $("#jRoom").oninput = (e) => (e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ""));
     const err = (t) => { const e = $("#jErr"); e.textContent = t; e.hidden = false; };
     $("#joinForm").onsubmit = (e) => {
@@ -56,9 +49,8 @@
       const room = $("#jRoom").value.trim().toUpperCase(), name = $("#jName").value.replace(/\s+/g, " ").trim();
       if (room.length !== 4) return err("Enter the 4-letter room code from the big screen.");
       if (!name) return err("Please enter your name.");
-      if (!country) return err("Pick a flag — it's for the Battle of the Nations!");
       Music.init({ ambient: true });
-      me = { id: me && me.room === room ? me.id : U.uid(), name, country, room };
+      me = { id: me && me.room === room ? me.id : U.uid(), name, room };
       store.setItem("tssi-player", JSON.stringify(me));
       history.replaceState(null, "", "?room=" + room);
       connect();
@@ -83,7 +75,7 @@
       if (me && T && (!S || !S.lb.some((r) => r[0] === me.id)) && Date.now() - lastJoin > 3000) sendJoin();
     }, 1000);
   }
-  function sendJoin() { lastJoin = Date.now(); T.send({ t: "join", id: me.id, name: me.name, country: me.country }); }
+  function sendJoin() { lastJoin = Date.now(); T.send({ t: "join", id: me.id, name: me.name }); }
   const send = (m) => T.send(Object.assign({ id: me.id, step: S ? S.step : -1 }, m));
 
   /* ---------- state from host ---------- */
@@ -181,7 +173,7 @@
   function header() {
     const r = myRank();
     return `<header class="phead">
-      <span class="pme" id="hName">${flag(me.country)} ${esc(myName())}</span>
+      <span class="pme" id="hName">${esc(myName())}</span>
       <span class="pscore"><b id="hScore">${fmt(r.score)}</b> pts <span id="hRank">${r.rank ? "· #" + r.rank + "/" + r.of : ""}</span></span>
       <button id="lbBtn" class="iconbtn${showBoard ? " on" : ""}" aria-label="Leaderboard" title="Leaderboard">🏆</button>
       <button id="sndBtn" class="iconbtn" aria-label="Sound on/off" title="Sound">${sound ? "🔔" : "🔕"}</button>
@@ -192,7 +184,7 @@
     const hs = $("#hScore"), hr = $("#hRank");
     if (hs) hs.textContent = fmt(r.score);
     if (hr) hr.textContent = r.rank ? "· #" + r.rank + "/" + r.of : "";
-    const hn = $("#hName"); if (hn) hn.textContent = flag(me.country) + " " + myName();
+    const hn = $("#hName"); if (hn) hn.textContent = myName();
   }
   function render() {
     app.innerHTML = header() + `<main id="pbody" class="pbody"></main>`;
@@ -219,8 +211,7 @@
   function boardHtml() {
     const lb = shownLb.length ? shownLb : S.lb;
     return `<h2>🏆 Live leaderboard</h2>
-      <ol class="plb">${lb.map((r, i) => `<li class="${r[0] === me.id ? "me" : ""}"><span class="prk">${i + 1}</span><span class="pnm">${flag(r[2])} ${esc(r[1])}</span>${shownDeltas[r[0]] ? `<em>+${fmt(shownDeltas[r[0]])}</em>` : ""}<b>${fmt(r[3])}</b></li>`).join("")}</ol>
-      <h3>🌍 Battle of the Nations</h3>${U.countryBars(Object.fromEntries(lb.map((r) => [r[0], { name: r[1], country: r[2], score: r[3] }])))}`;
+      <ol class="plb">${lb.map((r, i) => `<li class="${r[0] === me.id ? "me" : ""}"><span class="prk">${i + 1}</span><span class="pnm">${esc(r[1])}</span>${shownDeltas[r[0]] ? `<em>+${fmt(shownDeltas[r[0]])}</em>` : ""}<b>${fmt(r[3])}</b></li>`).join("")}</ol>`;
   }
 
   function renderBody() {
@@ -245,7 +236,7 @@
       const others = S.lb.filter((r) => r[0] !== me.id);
       b.innerHTML = `<div class="card center"><div class="big">🎉</div><h2>You're in, ${esc(myName())}!</h2><p>Watch the big screen — the show starts soon.</p></div>
         <div class="card"><div class="tag">${S.lb.length} in the studio</div>
-        <div class="who">${others.slice(0, 40).map((r) => `<span>${flag(r[2])} ${esc(r[1])}</span>`).join("")}${others.length > 40 ? `<span>+${others.length - 40} more</span>` : ""}${others.length ? "" : '<span class="hint">You\'re the first one here!</span>'}</div></div>`;
+        <div class="who">${others.slice(0, 40).map((r) => `<span>${esc(r[1])}</span>`).join("")}${others.length > 40 ? `<span>+${others.length - 40} more</span>` : ""}${others.length ? "" : '<span class="hint">You\'re the first one here!</span>'}</div></div>`;
     }
     else if (k === "intro") {
       const counts = v.counts || [], max = Math.max(1, ...counts), voted = local.v != null;
@@ -311,7 +302,7 @@
         ${full ? `<p class="center" id="lockMsg">🔒 Answers locked in! Wait for the reveal…</p>` : `
         <form id="fForm"><input id="fIn" class="lockable" maxlength="40" placeholder="Answer ${list.length + 1} of ${v.max}" autocomplete="off" enterkeyhint="send">
         <div class="row"><button id="fGo" type="submit" class="btn lockable">Add answer</button>${list.length ? `<button id="fDone" type="button" class="btn ghost lockable">I'm done</button>` : ""}</div></form>
-        <p class="hint" id="lockMsg">English, Deutsch or Español — small typos are OK.</p>`}</div>`;
+        <p class="hint" id="lockMsg">Small typos are OK.</p>`}</div>`;
       if (!full) {
         $("#fForm").onsubmit = (e) => {
           e.preventDefault();
@@ -420,7 +411,7 @@
       const r = myRank();
       b.innerHTML = `<div class="card center">${k === "final" ? "<h2>🏆 Final results!</h2>" : `<div class="tag">After ${esc(S.gameTitle || "")}</div>`}
         <div class="myrank">#${r.rank}<small> of ${r.of}</small></div><p>${fmt(r.score)} points</p></div><div class="card">${boardHtml()}</div>
-        ${k === "final" ? '<p class="center thanks-p">Thank you · Danke · ¡Gracias! · Thanks y\'all! 👋</p>' : ""}`;
+        ${k === "final" ? '<p class="center thanks-p">Thank you for playing! 👋</p>' : ""}`;
     }
     timerTick();
   }
@@ -446,7 +437,7 @@
     stopRoll();
     if (v.rid && local.rid !== v.rid) { local.rid = v.rid; local.rt = 0; local.rn = 0; lastSentN = 0; saveLocal(); }   // a fresh (or re-run) race
     b.innerHTML = `${timerBar()}<div class="card rollcard">
-        <div class="rbme"><span>${flag(me.country)} <b>${esc(myName())}</b></span><span id="rbRank" class="rbrankp"></span></div>
+        <div class="rbme"><span><b>${esc(myName())}</b></span><span id="rbRank" class="rbrankp"></span></div>
         <div class="rbprog"><i id="rbBar"></i><span class="rbh" id="rbH">🏇</span><span class="rbpost">🏁</span></div>
         <div class="rbstat"><span><b id="rbPts">0</b> / ${v.finish} steps</span><span id="rbLast" class="rblast"></span></div>
         <div class="lanewrap"><canvas id="rbLane" class="rblane off"></canvas><div id="rbCover" class="rbcover">Get ready…</div></div>
@@ -576,6 +567,6 @@
   }
 
   /* ---------- boot ---------- */
-  if (me && me.name && me.country && me.room) connect();
+  if (me && me.name && me.room) connect();
   else joinScreen();
 })();
