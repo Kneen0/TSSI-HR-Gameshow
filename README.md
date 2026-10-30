@@ -1,18 +1,19 @@
 # 🎤 The Big HR Game Show
-**TSSI HR · Monthly Global HR Social Connect** — a 45-minute live, multiplayer game show for colleagues in 🇬🇧 the UK, 🇺🇸 the US, 🇩🇪 Germany and 🇨🇷 Costa Rica.
+**TSSI HR · Monthly Global HR Social Connect** — a 45-minute live, multiplayer game show for colleagues wherever they are.
 
-Everyone plays on their own phone or a spare browser tab. The host shares one "big screen" on Teams/Zoom with music and sound effects. Scores update live for everyone, plus a **Battle of the Nations**.
+Everyone plays on their own phone or a spare browser tab. The host shares one "big screen" on Teams/Zoom with music and sound effects. Scores update live for everyone.
 
 | # | Game | Style | Time |
 |---|------|-------|------|
 | 0 | Lobby & warm-up | Join by QR code / room code | 5 min |
 | 1 | **Play Your Cards Bright** | *Play Your Cards Right* style — everyone calls HIGHER or LOWER on giant cards, streak bonuses | 8 min |
-| 2 | **The Price is Bright** | *Price is Right* style — closest without going over | 9 min |
-| 3 | **The Desk Derby** | Horse-racing: back a horse, mash CHEER to boost it | 10 min |
-| 4 | **Global Fortunes** | *Family Fortunes* style — "We asked 100 colleagues…" | 10 min |
-| 🏆 | Grand Finale | Podium, nation champions, awards | 3 min |
+| 2 | **Off the Wall** | Inspired by *The Wall*: answer right → pick a zone and drop a green ball down the giant pegboard; wrong answers earn red balls; then sign the contract or tear it up | 9 min |
+| 3 | **Work Family Fortunes** | *Family Fortunes* style — "We asked 100 colleagues… our survey said!" | 10 min |
+| 4 | **The Fairground Derby** | Fairground roll-a-ball race — everyone has their own horse and flicks a ball into 1/2/3-point holes on their phone | 8 min |
+| 🏆 | Grand Finale | Podium and awards | 3 min |
+| 🎲 | *Backup games* | **The Desk Derby** (bet on a horse, cheer it home), **The Price is Bright** (*Price is Right* style) and **Jargon Buster** (what does that office jargon really mean?) — play one any time from the Jump menu | ~8 min each |
 
-Every game opens with an **interactive intro**: animated title card, its own jingle, three-line rules, and a live warm-up vote on phones (e.g. *Which nation has the best poker face?*) worth 50 points.
+Every game opens with an **interactive intro**: animated title card, its own jingle, three-line rules, and a live warm-up vote on phones (e.g. *Who has the best poker face?*) worth 50 points.
 
 Built-in music is original and synthesised in the browser — no audio files, no licensing issues — and you can swap in your own tracks (see *Music* below).
 
@@ -24,11 +25,13 @@ Built-in music is original and synthesised in the browser — no audio files, no
 index.html        Landing page (Player / Host buttons)
 host.html         Big screen — share this on the call
 play.html         Player page — phones or browser tabs
-js/content.js     ✏️ ALL questions, prices, horses, survey answers (edit me!)
+js/content.js     ✏️ ALL questions, prices, horses, survey answers, running order (edit me!)
 js/config.js      ✏️ Your Supabase URL + key
 js/host.js        Game engine, scoring, screens
 js/play.js        Player app
 js/music.js       Synth music + sound effects
+js/rollball.js    The roll-a-ball lane on players' phones (Fairground Derby)
+js/wall.js        The pegboard for Off the Wall (shared by host + phones)
 js/transport.js   Realtime messaging (Supabase, or demo mode)
 css/style.css     The studio look
 supabase/schema.sql  Optional: saves each month's results
@@ -58,7 +61,7 @@ With `js/config.js` left blank the game runs in **demo mode**: host and players 
 1. Sign in at github.com → **New repository** → name it `tssi-gameshow` → Private is fine → **Create**.
 2. On the new repo page click **uploading an existing file**, drag in *everything* from this folder (keep the `js`, `css`, `supabase` folders) → **Commit changes**.
 
-### Step 2 — Supabase (makes it real-time across countries)
+### Step 2 — Supabase (makes it real-time for everyone)
 
 > ✅ **Already done for TSSI.** The project exists and `js/config.js` is filled in:
 >
@@ -127,10 +130,10 @@ Supabase Free allows 200 concurrent connections and 100 Realtime messages per se
 - *Host browser refreshed / crashed* → reopen `host.html` → **↻ Resume room XXXX**. Scores and players are kept on that computer.
 - *A player's phone dropped* → they reopen the link; they're remembered on that device and rejoin with their score.
 - *Silly name* → click it in the lobby to remove it.
-- *German-style prices* → players can type `7.995`, `5,65` or `1.234,56`; the phone shows how it was read before they lock in.
+- *Different number formats* → players can type `7.995`, `5,65` or `1.234,56`; the phone shows how it was read before they lock in.
 - *Player sees "Connecting…" forever* → check `config.js` has the URL and key, and the host screen is open.
 
-Full minute-by-minute host script with bilingual banter: **RUNSHEET.md**.
+Full minute-by-minute host script with suggested patter: **RUNSHEET.md**.
 
 ---
 
@@ -158,21 +161,26 @@ Press **🎙 Talk** (or `T`) any time to fade the music out instantly — sound 
 
 Get tracks from **Pixabay Music** (pixabay.com/music): free, commercial use allowed, no credit needed — search "game show", "quiz countdown", "fanfare", "horse race". Don't use real TV theme tunes; they're copyrighted. When the host screen starts it shows *"🎵 Using your music for: …"* to confirm what it found.
 
+### Backup games
+Short of a game, running early, or something isn't working? Open the **Jump** menu: at the bottom, under *Backup games*, pick **🎲 The Desk Derby**, **🎲 The Price is Bright** or **🎲 Jargon Buster**. It plays as a *Bonus Round*; after its leaderboard, **Next** brings you straight back to where you left the show. Scores count towards the final totals and awards.
+
 ## 5. Making it yours (monthly refresh)
 
 Everything editable lives in **`js/content.js`** — plain text in a fixed shape:
 - **Play Your Cards Bright:** nothing to prepare — the cards are shuffled fresh every show. Change `rows`, `perRow` or `seconds` if you want it longer or shorter.
-- **Lost in Translation** (optional extra round — add `"translate"` to `order` to use it): `q`, four `options`, `answer` (0 = first option), and a `fact` for the reveal.
-- **Price is Bright:** `name`, `currency`, `answer`, `fact`. The defaults are historical launch prices (1959 Mini £497, 2007 iPhone $499, 1974 VW Golf 7,995 DM, etc.) — **double-check them**, or swap in your own: office snacks, company swag, local coffee.
+- **Off the Wall:** five `questions` (each with three `options` and the `answer` number, 0 = first), the 15 slot `values` along the bottom of the Wall, `perCorrect` (what the contract guarantees per right answer) and the timers. Red balls: everyone gets one, plus one more for every two wrong answers (max 3).
+- **The Fairground Derby:** `finish` (points to reach the post, default 40), `seconds` (race time limit, 75), `prizes` for the first three, `perPoint`. Make `finish` smaller for a quicker race.
+- **Jargon Buster** (backup game): `q`, four `options`, `answer` (0 = first option), and a `fact` for the reveal.
+- **Price is Bright** (backup game): `name`, `currency`, `answer`, `fact`. The defaults are Monopoly prices and launch prices of famous gadgets in US dollars (2007 iPhone $499, 1995 PlayStation $299, etc.) — **double-check them**, or swap in your own: office snacks, company swag, local coffee.
 - **Desk Derby:** horse names, colours, odds and payouts. Win rates are tuned to roughly match the odds.
-- **Global Fortunes:** the survey numbers are illustrative. For the best reveal, send a one-question Microsoft Form to colleagues the week before and put the real counts in. Add likely spellings and German words to `aliases`; small typos are already forgiven.
-- **Running order:** `order: ["translate", "price", "derby", "fortunes"]` — reorder or drop games.
+- **Work Family Fortunes:** the survey numbers are illustrative. For the best reveal, send a one-question Microsoft Form to colleagues the week before and put the real counts in. Add likely spellings and other-language words to `aliases`; small typos are already forgiven.
+- **Running order:** `order: ["cards", "wall", "fortunes", "rollball"]` — reorder or drop games. **Backups:** `backups: ["derby", "price", "translate"]` — any game can be moved between the two lists.
 
-**Scoring at a glance:** warm-up vote 50 · cards 500 per right call, +100 for each call in a row (same value = nobody scores) · price 1000/600/400 for the three closest under, 2000 for exact, 200 for anyone else within 25% · derby pays the horse's listed amount, 200 for second · survey 10 pts per person who gave each answer. Country battle uses **average** score per player so a small office can beat a big one.
+**Scoring at a glance:** warm-up vote 50 · cards 500 per right call, +100 for each call in a row (same value = nobody scores) · price 1000/600/400 for the three closest under, 2000 for exact, 200 for anyone else within 25% · derby pays the horse's listed amount, 200 for second · survey 10 pts per person who gave each answer · Off the Wall: each green ball adds its slot (1 – 1,000), red balls subtract; contract = 250 per right answer, or your bank if you tore it up · Fairground Derby 1,500/1,000/700 for the first three past the post, plus 10 pts for every step your horse moved.
 
 ---
 
 ## 6. Privacy notes
-- Players enter only a display name and a flag. Nothing else is collected.
+- Players enter only a display name. Nothing else is collected.
 - Live game messages pass through Supabase Realtime and aren't stored.
-- If `SAVE_RESULTS` is on and the table exists, the final leaderboard (names, flags, scores) is saved to your Supabase project; it can't be read back with the public key. Turn it off in `config.js` if your policy prefers.
+- If `SAVE_RESULTS` is on and the table exists, the final leaderboard (names and scores) is saved to your Supabase project; it can't be read back with the public key. Turn it off in `config.js` if your policy prefers.
