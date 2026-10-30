@@ -20,8 +20,8 @@ window.Music = (function () {
   try { const m = localStorage.getItem("tssi-music-mode"); if (MODES.includes(m)) mode = m; } catch (e) {}
   const LOOP_LEVEL = { stings: 0, timer: 0.4, full: 0.75 };   // background loops sit under your voice
   /* the longest a one-off jingle may run before fading (keeps long MP3s short) */
-  const MAX_STING = { cards: 9, price: 9, derby: 9, fortunes: 9, translate: 9, board: 6, victory: 20 };
-  const SLOTS = ["lobby", "think", "cards", "price", "derby", "gallop", "fortunes", "board", "victory", "translate"];
+  const MAX_STING = { cards: 9, price: 9, derby: 9, fortunes: 9, translate: 9, fair: 9, wall: 9, board: 6, victory: 20 };
+  const SLOTS = ["lobby", "think", "cards", "price", "derby", "gallop", "fortunes", "fair", "organ", "wall", "board", "victory", "translate"];
   const FILES = {};      // slot → decoded AudioBuffer from /audio/<slot>.mp3
 
   const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -189,6 +189,29 @@ window.Music = (function () {
       drums(d, t, bpm, "k..hs..hk..hs.hh", 4, 0.9);
       return 16 * 60 / bpm;
     },
+    wall(d, t) { // big dramatic Saturday-night build for Off the Wall
+      const bpm = 120, pad = { type: "sawtooth", vol: 0.05, lp: 1800, attack: 0.15, release: 0.4 };
+      line(d, t, bpm, "D3+A3+D4:2 Bb2+F3+Bb3:2 C3+G3+C4:2 A2+E3+A3:1 A2+E3+C#4:1", pad);
+      line(d, t, bpm, "D5:0.25 A4:0.25 F5:0.25 A4:0.25 D5:0.25 A4:0.25 F5:0.25 A4:0.25 D5:0.25 Bb4:0.25 F5:0.25 Bb4:0.25 D5:0.25 Bb4:0.25 F5:0.25 Bb4:0.25 E5:0.25 C5:0.25 G5:0.25 C5:0.25 E5:0.25 C5:0.25 G5:0.25 C5:0.25 E5:0.25 C#5:0.25 A5:0.25 C#5:0.25 E5:0.25 A5:0.25 C#6:0.5", { type: "square", vol: 0.05, lp: 3200 });
+      line(d, t + 8 * 60 / bpm, bpm, "D4+F4+A4+D5:3", { type: "sawtooth", vol: 0.07, lp: 2600, release: 0.6 });
+      drums(d, t, bpm, "k...k...s...k.k.", 2, 0.9);
+      drums(d, t + 4 * 60 / bpm, bpm, "k.k.s.k.k.k.ssss", 1, 1);
+      kick(d, t + 8 * 60 / bpm, 0.9); noise(d, t + 8 * 60 / bpm, 1.4, { freq: 4000, vol: 0.25 });
+      return 11 * 60 / bpm;
+    },
+    fair(d, t) { // fairground organ waltz (3/4) — jingle for The Fairground Derby
+      const bpm = 176, org = { type: "square", vol: 0.06, lp: 2600, detune: 6 }, pipe = { type: "triangle", vol: 0.14 };
+      line(d, t, bpm, "C5:1 E5:1 G5:1 C6:2 G5:1 A5:1 G5:1 E5:1 G5:3 F5:1 A5:1 C6:1 D6:2 C6:1 B5:1 D6:1 B5:1 C6:3", org);
+      line(d, t, bpm, "C5:1 E5:1 G5:1 C6:2 G5:1 A5:1 G5:1 E5:1 G5:3 F5:1 A5:1 C6:1 D6:2 C6:1 B5:1 D6:1 B5:1 C6:3", pipe);
+      line(d, t, bpm, "C3:1 G3+C4+E4:1 G3+C4+E4:1 C3:1 G3+C4+E4:1 G3+C4+E4:1 C3:1 G3+C4+E4:1 G3+C4+E4:1 E3:1 G3+C4+E4:1 G3+C4+E4:1 F3:1 A3+C4+F4:1 A3+C4+F4:1 D3:1 A3+D4+F4:1 A3+D4+F4:1 G2:1 G3+B3+D4:1 G3+B3+D4:1 C3:3", { type: "triangle", vol: 0.12 });
+      return 24 * 60 / bpm;
+    },
+    organ(d, t) { // background loop while everyone rolls
+      const bpm = 168, org = { type: "square", vol: 0.045, lp: 2200, detune: 6 };
+      line(d, t, bpm, "G4:1 C5:1 E5:1 D5:1 C5:1 A4:1 G4:1 C5:1 E5:1 G5:3 F5:1 E5:1 D5:1 E5:1 D5:1 B4:1 G4:1 B4:1 D5:1 C5:3", org);
+      line(d, t, bpm, "C3:1 E3+G3:1 E3+G3:1 A2:1 E3+A3:1 E3+A3:1 C3:1 E3+G3:1 E3+G3:1 C3:1 E3+G3:1 E3+G3:1 D3:1 F3+A3:1 F3+A3:1 G2:1 D3+F3:1 D3+F3:1 G2:1 B2+D3:1 B2+D3:1 C3:1 E3+G3:1 E3+G3:1", { type: "triangle", vol: 0.1 });
+      return 24 * 60 / bpm;
+    },
     price(d, t) { // brassy showtime
       const bpm = 140, o = { type: "sawtooth", vol: 0.07, lp: 2600 };
       line(d, t, bpm, "C4:0.25 D4:0.25 E4:0.25 F4:0.25 G4:0.25 A4:0.25 B4:0.25 C5:0.25 E5+G5+C6:1.5 -:0.5 D5+F5+Bb5:0.5 E5+G5+C6:0.5 -:0.5 F5+A5+D6:1 E5+G5+C6:0.5 D5+G5+B5:0.5 E5+G5+C6:3", o);
@@ -245,6 +268,8 @@ window.Music = (function () {
     reveal() { const t = ctx.currentTime; tone(sfxBus, t, "G5", 0.12, { type: "square", vol: 0.12 }); tone(sfxBus, t + 0.1, "C6", 0.4, { type: "square", vol: 0.12 }); },
     drumroll() { const t = ctx.currentTime; for (let i = 0; i < 40; i++) snare(sfxBus, t + i * 0.05, 0.05 + i * 0.004); kick(sfxBus, t + 2, 0.8); noise(sfxBus, t + 2, 1.2, { freq: 5000, vol: 0.2 }); },
     applause() { const t = ctx.currentTime; for (let i = 0; i < 90; i++) noise(sfxBus, t + Math.random() * 2.5, 0.05, { ftype: "bandpass", freq: 1500 + Math.random() * 3000, vol: 0.12 }); },
+    peg() { const t = ctx.currentTime; tone(sfxBus, t, ["E7", "G7", "C7", "A6"][Math.floor(Math.random() * 4)], 0.03, { type: "triangle", vol: 0.05 }); },
+    ping() { const t = ctx.currentTime; tone(sfxBus, t, "C6", 0.25, { type: "sine", vol: 0.14, release: 0.2 }); tone(sfxBus, t + 0.05, "G6", 0.3, { type: "sine", vol: 0.1, release: 0.25 }); },
     fanfare() { const t = ctx.currentTime; line(sfxBus, t, 160, "C5:0.5 E5:0.5 G5:0.5 C6:2", { type: "sawtooth", vol: 0.08, lp: 3500 }); }
   };
 

@@ -7,34 +7,43 @@
   const C = window.CONTENT, CFG = window.TSSI_CONFIG || {};
   const { esc, $, flag, fmt, num, ranked, countryBars, matchSurvey } = U;
   const stage = $("#stage");
-  const PLAN = { lobby: 5, cards: 8, translate: 8, price: 9, derby: 10, fortunes: 10, final: 3 }; // minutes (45 total)
+  const PLAN = { lobby: 5, cards: 8, wall: 9, translate: 8, price: 9, derby: 9, fortunes: 10, rollball: 8, final: 3 }; // minutes
   const RACE_LEN = 1300;
   const FINAL_REVEAL_MS = 8700;
 
   /* ---------------- state ---------------- */
   let S = null, T = null, steps = [];
-  let lastPub = 0, pubTimer = null, saveTimer = null, raceTimer = null, autoTimer = null, lastSec = -1;
+  let lastPub = 0, pubTimer = null, saveTimer = null, raceTimer = null, autoTimer = null, lastSec = -1, wallFx = null, wallRaf = 0;
 
   /* every timeout a screen schedules goes through later(), so leaving the
      screen cancels them (no stray drumrolls/flips on the next screen) */
   const timers = new Set();
   function later(fn, ms) { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; }
-  function clearLater() { timers.forEach(clearTimeout); timers.clear(); clearTimeout(autoTimer); autoTimer = null; clearInterval(raceTimer); raceTimer = null; document.querySelectorAll(".confetti").forEach((c) => c.remove()); }
+  function clearLater() { wallFx = null; cancelAnimationFrame(wallRaf); timers.forEach(clearTimeout); timers.clear(); clearTimeout(autoTimer); autoTimer = null; clearInterval(raceTimer); raceTimer = null; document.querySelectorAll(".confetti").forEach((c) => c.remove()); }
 
+  /* The show: lobby → main games (C.order) → grand finale, then the backup games
+     (C.backups) which are only reached from the Jump menu. */
   function buildSteps() {
     const s = [{ k: "lobby" }];
-    C.order.forEach((g) => {
-      s.push({ k: "intro", g });
-      if (g === "cards") for (let i = 0; i < C.cards.rows * (C.cards.perRow - 1); i++) s.push({ k: "q", g, i }, { k: "reveal", g, i });
-      if (g === "translate") C.translate.questions.forEach((_, i) => s.push({ k: "q", g, i }, { k: "reveal", g, i }));
-      if (g === "price") C.price.items.forEach((_, i) => s.push({ k: "q", g, i }, { k: "reveal", g, i }));
-      if (g === "derby") for (let r = 0; r < C.derby.races; r++) s.push({ k: "pick", g, i: r }, { k: "race", g, i: r }, { k: "result", g, i: r });
-      if (g === "fortunes") C.fortunes.questions.forEach((_, i) => s.push({ k: "q", g, i }, { k: "reveal", g, i }));
-      s.push({ k: "board", g });
-    });
+    const add = (g, backup) => {
+      const push = (...o) => o.forEach((x) => s.push(backup ? Object.assign(x, { backup: true }) : x));
+      push({ k: "intro", g });
+      if (g === "cards") for (let i = 0; i < C.cards.rows * (C.cards.perRow - 1); i++) push({ k: "q", g, i }, { k: "reveal", g, i });
+      if (g === "translate") C.translate.questions.forEach((_, i) => push({ k: "q", g, i }, { k: "reveal", g, i }));
+      if (g === "price") C.price.items.forEach((_, i) => push({ k: "q", g, i }, { k: "reveal", g, i }));
+      if (g === "derby") for (let r = 0; r < C.derby.races; r++) push({ k: "pick", g, i: r }, { k: "race", g, i: r }, { k: "result", g, i: r });
+      if (g === "fortunes") C.fortunes.questions.forEach((_, i) => push({ k: "q", g, i }, { k: "reveal", g, i }));
+      if (g === "rollball") for (let r = 0; r < C.rollball.races; r++) push({ k: "roll", g, i: r }, { k: "rollres", g, i: r });
+      if (g === "wall") { C.wall.questions.forEach((_, i) => push({ k: "wallq", g, i }, { k: "walldrop", g, i })); push({ k: "wallcon", g }, { k: "wallred", g }); }
+      push({ k: "board", g });
+    };
+    C.order.forEach((g) => add(g, false));
     s.push({ k: "final" });
+    (C.backups || []).filter((g) => C[g] && !C.order.includes(g)).forEach((g) => add(g, true));
     return s;
   }
+  const finalIdx = () => steps.findIndex((x) => x.k === "final");
+  const gamesPlayed = () => C.order.concat((C.backups || []).filter((g) => C[g] && !C.order.includes(g) && Object.values(S.players).some((p) => p.g[g])));
 
   function fresh(room) {
     return { room, step: 0, players: {}, kicked: {}, ans: {}, poll: {}, paid: {}, picks: {}, cheers: {}, race: null,
@@ -102,11 +111,22 @@
       const v = +m.v; if (!(v >= 0 && v < C.derby.horses.length)) return;
       S.picks[m.id] = v; updatePicks(); save(); pubSoon();
     }
+    if (m.t === "roll" && st.k === "roll") onRoll(m, p);
+    if (m.t === "answer" && st.k === "wallq" && open && !S.ans[m.id] && !S.scored[S.step + 1]) {
+      const v = +m.v; if (v >= 0 && v < 3) { S.ans[m.id] = { v, at: Date.now() }; updateCounts(); save(); pubSoon(); checkAllIn(); }
+    }
+    if (m.t === "zone" && st.k === "walldrop" && S.wd && S.wd.phase === "choose" && m.id in S.wd.elig) {
+      const z = +m.v; if (z >= 0 && z < 7) { S.wd.elig[m.id] = z; drawWallIdle(); save(); pubSoon(); if (Object.values(S.wd.elig).every((x) => x != null) && S.deadline - Date.now() > 1500) S.deadline = Date.now() + 1200; }
+    }
+    if (m.t === "sign" && st.k === "wallcon" && open) {
+      S.wsign[m.id] = !!m.v; updateCounts(); save(); pubSoon(); checkAllIn();
+    }
     if (m.t === "cheer" && st.k === "race" && S.race && !S.race.done) {
       const h = S.picks[m.id]; if (h == null) return;
       const n = Math.max(0, Math.min(40, +m.n || 0));
       S.race.cheerNow[h] = (S.race.cheerNow[h] || 0) + n;
       S.cheers[m.id] = (S.cheers[m.id] || 0) + n;
+      if (n > 0) cheerBubble(h, m.id);
     }
   }
 
@@ -130,7 +150,18 @@
     if (st.k === "pick" || st.k === "race" || st.k === "result") {
       view = { horses: g.horses.map((h) => ({ name: h.name, color: h.color, odds: h.odds, pays: h.pays })), race: st.i + 1, of: g.races };
       if (st.k === "result") { const sn = S.snap[S.step] || {}; view.order = sn.order || []; view.abandoned = !!sn.abandoned; }
+      if (st.k === "race" && S.race) { view.pos = S.race.pos.map((p) => +(p / RACE_LEN).toFixed(3)); view.order = S.race.order; view.done = !!S.race.done; }
     }
+    if (st.k === "roll" || st.k === "rollres") {
+      const RB = C.rollball;
+      view = { race: st.i + 1, of: RB.races, finish: RB.finish, prizes: RB.prizes, perPoint: RB.perPoint };
+      if (st.k === "roll") {
+        view.go = Math.max(0, S.rbGo - Date.now()); view.done = !!S.rbDone; view.rid = S.rbGo;
+        view.d = Object.fromEntries(Object.entries(S.rb || {}).map(([id, r]) => [id, r.d]));
+        view.rank = rollRanking().map((x) => x.id); view.fin = S.rbOrder || [];
+      } else { const sn = S.snap[S.step] || {}; view.rank = sn.rank || []; view.d = sn.d || {}; view.fin = sn.fin || []; }
+    }
+    if (st.g === "wall" && !["intro", "board"].includes(st.k)) view = wallView(st);
     return {
       t: "state", room: S.room, step: S.step, k: st.k, g: st.g || null, i: st.i == null ? null : st.i,
       gameTitle: g ? g.title : null, view,
@@ -146,6 +177,10 @@
     const m = {};
     if (st.k === "intro") Object.keys(S.poll).forEach((id) => (m[id] = 1));
     if (st.k === "pick") Object.keys(S.picks).forEach((id) => (m[id] = 1));
+    if (st.k === "roll") Object.entries(S.rb || {}).forEach(([id, r]) => (m[id] = r.n));
+    if (st.k === "wallq") Object.keys(S.ans).forEach((id) => (m[id] = 1));
+    if (st.k === "walldrop" && S.wd) Object.entries(S.wd.elig).forEach(([id, z]) => { if (z != null) m[id] = 1; });
+    if (st.k === "wallcon") Object.keys(S.wsign || {}).forEach((id) => (m[id] = 1));
     if (st.k === "q") Object.entries(S.ans).forEach(([id, a]) => (m[id] = a.list ? a.list.length + (a.done ? 100 : 0) : 1));
     return m;
   }
@@ -170,7 +205,7 @@
   function resolve(idx, dir) {
     idx = Math.max(0, Math.min(steps.length - 1, idx));
     const s = steps[idx];
-    const resultOf = s.k === "q" ? idx + 1 : s.k === "pick" ? idx + 2 : s.k === "race" ? idx + 1 : -1;
+    const resultOf = ["q", "race", "roll", "wallq", "wallcon"].includes(s.k) ? idx + 1 : s.k === "pick" ? idx + 2 : -1;
     if (resultOf > 0 && S.scored[resultOf]) return dir < 0 ? resolve(idx - 1, -1) : resultOf;
     return idx;
   }
@@ -181,15 +216,22 @@
       let guard = 0; while (S.race.order.length < C.derby.horses.length && guard++ < 5000) raceTick(S.race);
       S.race.done = true;
     }
+    // leaving a Wall drop before the balls fell (e.g. via the Jump menu): still bank everyone's green ball
+    if (S.step < steps.length && cur().k === "walldrop" && S.wd && S.wd.phase === "choose") { creditDrops(); S.wd.phase = "done"; }
     clearLater();
+    const from = S.step;
     S.step = resolve(idx, dir || 1);
     const st = cur();
+    // stepping into a backup game from the main show: remember where to come back to
+    if (st.backup && steps[from] && !steps[from].backup) S.returnTo = steps[from].k === "final" ? from : from + 1;
     S.deadline = 0; S.holdUntil = 0; S.allIn = false; lastSec = -1;
     S.deltas = (S.snap[S.step] && S.snap[S.step].deltas) || {};
     if (st.k === "intro") S.poll = {};
     if (st.g === "cards") ensureDeck();
     if (st.k === "q") { S.ans = {}; S.qStart = Date.now(); S.deadline = S.qStart + game().seconds * 1000; }
     if (st.k === "pick") { S.picks = {}; S.cheers = {}; S.race = null; S.deadline = Date.now() + C.derby.pickSeconds * 1000; }
+    if (st.k === "roll") { S.rb = {}; S.rbOrder = []; S.rbDone = false; S.rbGo = Date.now() + 4600; S.deadline = S.rbGo + C.rollball.seconds * 1000; S.rbTicker = []; }
+    if (st.g === "wall") wallEnter(st);
     if (st.k === "reveal" && st.g === "cards") S.holdUntil = Date.now() + 1100;
     if (st.k === "reveal" && st.g === "price") S.holdUntil = Date.now() + 2400;
     if (st.k === "reveal" && st.g === "fortunes") S.holdUntil = Date.now() + 1200 + game().questions[st.i].answers.length * 900;
@@ -200,18 +242,26 @@
   function next() {
     const st = cur();
     if (st.k === "race" && !(S.race && S.race.done)) { finishRaceNow(); return; } // first press: photo-finish, second press: result
+    if (st.k === "roll" && !S.rbDone) { endRoll(); return; }                       // first press: stop the race
+    if (st.k === "walldrop" && S.wd && S.wd.phase === "choose") { startFall(); return; } // first press: drop the balls now
+    if (st.k === "final") return;                                                   // end of the show
+    if (st.backup && st.k === "board") { go(S.returnTo != null ? S.returnTo : finalIdx(), 1); return; } // back to the show
     if (S.step < steps.length - 1) go(S.step + 1, 1);
   }
-  const back = () => go(S.step - 1, -1);
+  function back() {
+    const st = cur();
+    if (st.backup && st.k === "intro") { go(Math.max(0, (S.returnTo != null ? S.returnTo : finalIdx()) - 1), -1); return; }
+    go(S.step - 1, -1);
+  }
 
   function checkAllIn() {
-    const st = cur(); if (st.k !== "q") return;
+    const st = cur(); if (!["q", "wallq", "wallcon"].includes(st.k)) return;
     // ignore "ghosts" (someone who switched phone and left an old copy behind): only wait for
     // players who've done something in the last 3 minutes
     const recent = Date.now() - 180000;
     const ids = Object.keys(S.players).filter((id) => !S.players[id].seen || S.players[id].seen > recent || S.ans[id]);
     if (!ids.length) return;
-    const done = ids.every((id) => S.ans[id] && (st.g !== "fortunes" || S.ans[id].done));
+    const done = ids.every((id) => (st.k === "wallcon" ? id in S.wsign : S.ans[id] && (st.g !== "fortunes" || S.ans[id].done)));
     if (done && S.deadline - Date.now() > 2500) { S.allIn = true; S.deadline = Date.now() + 2000; pub(true); }
   }
 
@@ -219,7 +269,7 @@
   function enter() {
     const st = cur();
     stage.className = "stage k-" + st.k + (st.g ? " g-" + st.g : "");
-    ({ lobby: vLobby, intro: vIntro, q: vQuestion, reveal: vReveal, pick: vPick, race: vRace, result: vResult, board: vBoard, final: vFinal })[st.k]();
+    ({ lobby: vLobby, intro: vIntro, q: vQuestion, reveal: vReveal, pick: vPick, race: vRace, result: vResult, roll: vRoll, rollres: vRollRes, wallq: vWallQ, walldrop: vWallDrop, wallcon: vWallCon, wallred: vWallRed, board: vBoard, final: vFinal })[st.k]();
     updateCounts();
     fitStage();
   }
@@ -304,7 +354,7 @@
     later(() => Music.play(g.jingle, false, "lobby"), 250);
     stage.innerHTML = `
       <div class="intro">
-        <div class="round-badge">ROUND ${num_} of ${C.order.length}</div>
+        <div class="round-badge">${st.backup ? "🎲 BONUS ROUND" : `ROUND ${num_} of ${C.order.length}`}</div>
         <h1 class="intro-title">${esc(g.title)}</h1>
         <p class="intro-tag">${esc(g.tagline)}</p>
         <div class="intro-grid">
@@ -534,9 +584,11 @@
 
   function vRace() {
     const g = C.derby, st = cur();
+    const crowd = Array.from("🙌👏🎉🥳📣🙌🎩👒🙌👏🥂🎉📣👏🙌🎩🥳👏");
     stage.innerHTML = `<div class="race">${head(`${esc(g.title)} · Race ${st.i + 1}/${g.races}`, `<span class="answered">📣 CHEER on your phone!</span>`)}
-      <div class="track">${g.horses.map((h, i) => `<div class="lane" style="--c:${h.color}"><span class="lname"><span class="silk">${i + 1}</span>${esc(h.name)}</span><span class="cheerbar" id="cb${i}"></span><span class="horse" id="hz${i}">🏇</span><span class="place-badge" id="pb${i}"></span></div>`).join("")}<div class="finish"></div></div>
-      <div class="commentary" id="comm">Under starter's orders…</div><div id="countdown" class="countdown"></div></div>`;
+      <div class="stands" id="stands">${[...crowd, ...crowd].map((e, i) => `<span style="--d:${(i % 7) * 0.09}s">${e}</span>`).join("")}</div>
+      <div class="track" id="track">${g.horses.map((h, i) => `<div class="lane" style="--c:${h.color}"><span class="lname"><span class="silk">${i + 1}</span>${esc(h.name)}</span><span class="cheerbar" id="cb${i}"></span><span class="horse" id="hz${i}"><span class="dust"></span><span class="hbody">🏇</span><span class="hpos" id="hp${i}"></span></span><span class="bubbles" id="bb${i}"></span><span class="place-badge" id="pb${i}"></span></div>`).join("")}<div class="finish"></div><div class="flash" id="flash"></div></div>
+      <div class="commentary" id="comm">Under starter's orders…</div><div class="furlong" id="furlong">🏁 FINAL FURLONG!</div><div id="countdown" class="countdown"></div></div>`;
     if (S.race && S.race.done) { drawRace(); comm("Race over — press Next for the result"); return; }
     S.race = null;
     Music.play("derby");
@@ -578,11 +630,15 @@
     S.race = newRace();
     Music.play("gallop", true);
     comm(g.commentary[0]);
-    let nextComm = 25;
+    const tr = $("#track"); if (tr) tr.classList.add("running");
+    let nextComm = 25, furlong = false, winT = 0;
     raceTimer = setInterval(() => {
       const R = S.race;
       const w = raceTick(R);
-      if (w >= 0) { comm(`🏆 ${g.horses[w].name} WINS IT!`); Music.sfx("bell"); Music.sfx("applause"); }
+      if (w >= 0) { winT = R.t; comm(`🏆 ${g.horses[w].name} WINS IT!`); Music.sfx("bell"); Music.sfx("applause"); }
+      if (R.order.length === 2 && winT && R.t - winT <= 3 && !R.photo) { R.photo = true; photoFinish(); }
+      if (!furlong && Math.max(...R.pos) > RACE_LEN * 0.78) { furlong = true; const f = $("#furlong"); if (f) f.classList.add("show"); Music.sfx("whoosh"); }
+      if (R.t % 10 === 0) pub(true);   // phones show a live mini-race
       if (R.t >= nextComm && R.order.length === 0) {
         nextComm = R.t + 22 + Math.floor(Math.random() * 10);
         const lead = R.pos.indexOf(Math.max(...R.pos));
@@ -595,9 +651,26 @@
       if (R.order.length === N) endRace();
     }, 100);
   }
+  function photoFinish() {
+    const f = $("#flash"); if (f) { f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
+    Music.sfx("reveal"); later(() => comm("📸 PHOTO FINISH! What a race!"), 900);
+  }
+  /* a "📣 Name" bubble floats up from a horse whenever its backers cheer */
+  const lastBubble = {};
+  function cheerBubble(h, id) {
+    const box = $("#bb" + h), now = Date.now(); if (!box || now - (lastBubble[h] || 0) < 260) return;
+    lastBubble[h] = now;
+    const R = S.race, x = R ? R.pos[h] / RACE_LEN : 0;
+    const el = document.createElement("span"); el.className = "bubble";
+    el.style.setProperty("--x", x.toFixed(3)); el.style.setProperty("--j", (Math.random() * 2 - 1).toFixed(2));
+    el.textContent = "📣 " + (pname(id).split(" ")[0] || "");
+    box.appendChild(el); setTimeout(() => el.remove(), 1400);
+    const st = $("#stands"); if (st) { st.classList.add("roar"); clearTimeout(st._t); st._t = setTimeout(() => st.classList.remove("roar"), 700); }
+  }
   function endRace() {
     clearInterval(raceTimer); raceTimer = null;
     S.race.done = true; save(); drawRace();
+    const tr = $("#track"); if (tr) tr.classList.remove("running");
     Music.play("board"); later(() => Music.stop(1), 2500);
     later(() => { if (cur().k === "race") next(); }, 2600);
   }
@@ -615,12 +688,24 @@
   }
   function drawRace() {
     const R = S.race; if (!R) return;
+    // live race positions: finished horses in finishing order, then by distance
+    const live = R.pos.map((p, i) => i).sort((a, b) => { const fa = R.order.indexOf(a), fb = R.order.indexOf(b); return (fa < 0 ? 99 : fa) - (fb < 0 ? 99 : fb) || R.pos[b] - R.pos[a]; });
+    R.last = R.last || R.pos.slice();
     R.pos.forEach((p, i) => {
-      const el = $("#hz" + i); if (el) el.style.setProperty("--x", (p / RACE_LEN).toFixed(4));
+      const el = $("#hz" + i);
+      if (el) {
+        el.style.setProperty("--x", (p / RACE_LEN).toFixed(4));
+        const v = Math.max(0, p - R.last[i]);                        // faster horse → faster gallop
+        el.style.setProperty("--spd", (v > 0 ? Math.max(0.18, Math.min(0.5, 2.6 / v)) : 0).toFixed(2) + "s");
+        el.classList.toggle("lead", live[0] === i && !R.done);
+        el.classList.toggle("stopped", R.order.includes(i));
+        const hp = $("#hp" + i); if (hp) hp.textContent = R.order.includes(i) ? "" : live.indexOf(i) + 1;
+      }
       const cb = $("#cb" + i); if (cb) cb.style.opacity = Math.min(0.85, R.cheerShow[i] / 40).toFixed(2);
       const pb = $("#pb" + i), place = R.order.indexOf(i);
       if (pb && place >= 0 && place < 3 && !pb.textContent) pb.textContent = ["🥇", "🥈", "🥉"][place];
     });
+    R.last = R.pos.slice();
   }
   function comm(t) { const el = $("#comm"); if (el) { el.textContent = t; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); } }
 
@@ -655,11 +740,332 @@
       ${miniBoard()}</div>`;
   }
 
+  /* ---------------- The Fairground Derby (roll-a-ball) ---------------- */
+  /* Phones send their running total ("total" points from "n" rolls) about once a
+     second — a lost message is simply replaced by the next one. The host checks
+     it's believable: at most 3 points a roll and roughly one roll every 0.5 s. */
+  function onRoll(m, p) {
+    const RB = C.rollball, now = Date.now();
+    if (S.rbDone || now < S.rbGo - 800 || now > S.deadline + 1500) return;
+    const r = S.rb[m.id] || (S.rb[m.id] = { d: 0, n: 0, at: 0, fin: 0, last: S.rbGo - 500 });
+    const total = Math.max(0, Math.floor(+m.total || 0)), n = Math.max(0, Math.floor(+m.n || 0));
+    if (n <= r.n) return;                                       // old or repeated message
+    const rolls = Math.min(n - r.n, Math.floor((now - r.last) / 450) + 2);
+    const add = Math.max(0, Math.min(total - r.d, rolls * 3, RB.finish - r.d));
+    r.n = n; r.last = now;
+    if (add > 0) {
+      r.d += add; r.at = now;
+      if (add >= 3) rollTicker(`🎯 ${p.name} +${add}`);
+      if (r.d >= RB.finish && !r.fin) {
+        r.fin = now; S.rbOrder.push(m.id);
+        const place = S.rbOrder.length;
+        rollTicker(`🏁 ${p.name} finishes ${["1st", "2nd", "3rd"][place - 1] || place + "th"}!`, true);
+        Music.sfx(place === 1 ? "bell" : "ding"); if (place === 1) Music.sfx("applause");
+        const racing = Object.keys(S.players).length;
+        if (S.rbOrder.length >= Math.min(3, racing)) later(endRoll, 1200);
+      }
+    }
+    drawRoll(); save(); pubSoon();
+  }
+  function rollRanking() {
+    const rb = S.rb || {};
+    return Object.keys(S.players).map((id) => ({ id, ...(rb[id] || { d: 0, at: Infinity, fin: 0 }) }))
+      .sort((a, b) => ((a.fin || Infinity) - (b.fin || Infinity)) || (b.d - a.d) || ((a.at || Infinity) - (b.at || Infinity)) || pname(a.id).localeCompare(pname(b.id)));
+  }
+  function rollTicker(text, big) {
+    S.rbTicker = (S.rbTicker || []).concat([{ text, big: !!big }]).slice(-5);
+    const t = $("#rbTicker"); if (!t) return;
+    const el = document.createElement("span"); el.className = "tk" + (big ? " big" : ""); el.textContent = text;
+    t.prepend(el); while (t.children.length > 5) t.lastChild.remove();
+  }
+  function vRoll() {
+    const RB = C.rollball, st = cur();
+    stage.innerHTML = `<div class="rollrace">${head(`${esc(RB.title)} · ${RB.races > 1 ? `Race ${st.i + 1}/${RB.races} · ` : ""}first to ${RB.finish} 🏁`, `${timerHtml()}<span class="answered"><b id="rbCount">0</b> horses racing</span>`)}
+      <div class="fair">
+        <div class="canopy"></div>
+        <div class="rbtrack" id="rbTrack"><div class="rbfinish"></div></div>
+      </div>
+      <div class="rb-foot"><div class="rb-help">📱 Flick the ball up the lane on your phone · holes score <b class="h1">1</b> <b class="h2">2</b> <b class="h3">3</b></div><div class="ticker" id="rbTicker"></div></div>
+      <div id="countdown" class="countdown"></div></div>`;
+    if (S.rbDone) { drawRoll(); return; }
+    Music.play("organ", true);
+    const cd = $("#countdown");
+    const beat = (txt, sfx) => { cd.textContent = txt; cd.classList.remove("beat"); void cd.offsetWidth; cd.classList.add("beat"); Music.sfx(sfx); };
+    const lead = S.rbGo - Date.now();
+    (S.rbTicker || []).forEach((t) => rollTicker(t.text, t.big));
+    if (lead > 0) {
+      [[3, 3000], [2, 2000], [1, 1000]].forEach(([n, ms]) => { if (lead - ms >= 0) later(() => beat(String(n), "tock"), lead - ms); });
+      later(() => { beat("ROLL!", "gun"); later(() => (cd.textContent = ""), 800); }, lead);
+    }
+    drawRoll();
+  }
+  const ROW_EM = 3.05;
+  function drawRoll() {
+    const tr = $("#rbTrack"); if (!tr || cur().k !== "roll") return;
+    const RB = C.rollball, rank = rollRanking(), top = rank.slice(0, 8), keep = new Set(top.map((x) => x.id));
+    tr.style.height = Math.max(1, top.length) * ROW_EM + "em";
+    tr.querySelectorAll(".rbrow").forEach((el) => { if (!keep.has(el.dataset.id)) el.remove(); });
+    top.forEach((x, i) => {
+      let el = tr.querySelector(`.rbrow[data-id="${x.id}"]`);
+      if (!el) {
+        el = document.createElement("div"); el.className = "rbrow"; el.dataset.id = x.id;
+        el.innerHTML = `<span class="rbname"><b class="rbrank"></b>${pflag(x.id)} ${esc(pname(x.id))}</span><span class="rbhorse"><b>🏇</b></span><span class="rbpts"></span>`;
+        tr.appendChild(el);
+      }
+      el.style.setProperty("--r", i);
+      el.style.setProperty("--x", Math.min(1, x.d / RB.finish).toFixed(3));
+      el.classList.toggle("fin", !!x.fin); el.classList.toggle("lead", i === 0 && x.d > 0);
+      el.querySelector(".rbrank").textContent = x.fin ? ["🥇", "🥈", "🥉"][S.rbOrder.indexOf(x.id)] || "🏁" : i + 1;
+      el.querySelector(".rbpts").textContent = x.d;
+    });
+    const c = $("#rbCount"); if (c) c.textContent = rank.length;
+  }
+  function rollTick() {
+    if (S.rbDone) return;
+    const now = Date.now(), total = C.rollball.seconds * 1000;
+    const rem = Math.max(0, S.deadline - now), live = now >= S.rbGo;
+    const tn = $("#tnum"), ring = $("#tring");
+    if (tn) tn.textContent = live ? Math.ceil(rem / 1000) : "";
+    if (ring) { ring.style.strokeDashoffset = (276.5 * (1 - Math.min(1, live ? rem / total : 1))).toFixed(1); ring.classList.toggle("hot", live && rem <= 10000); }
+    const sec = Math.ceil(rem / 1000);
+    if (live && sec !== lastSec) { lastSec = sec; if (sec <= 5 && sec > 0) Music.sfx("tick"); }
+    if (live && rem <= 0) endRoll();
+  }
+  function endRoll() {
+    if (S.rbDone || cur().k !== "roll") return;
+    S.rbDone = true; S.deadline = 0; save();
+    const cd = $("#countdown"); if (cd) { cd.textContent = "🏁"; cd.classList.remove("beat"); void cd.offsetWidth; cd.classList.add("beat"); }
+    Music.play("board"); later(() => Music.stop(1), 2500);
+    drawRoll(); pub(true);
+    later(() => { if (cur().k === "roll") next(); }, 2600);
+  }
+  function vRollRes() {
+    const RB = C.rollball, st = cur();
+    if (!S.scored[S.step]) {
+      S.scored[S.step] = true; S.deltas = {};
+      const rank = rollRanking(), fin = (S.rbOrder || []).slice();
+      rank.forEach((x, i) => {
+        let pts = Math.min(x.d, RB.finish) * RB.perPoint;
+        if (i < 3 && x.d > 0) pts += RB.prizes[i] || 0;
+        addPoints(x.id, pts, "rollball");
+      });
+      S.snap[S.step] = { rank: rank.map((x) => x.id), d: Object.fromEntries(rank.map((x) => [x.id, x.d])), fin, deltas: S.deltas };
+      save();
+    }
+    const sn = S.snap[S.step] || { rank: [], d: {}, fin: [] };
+    const top = sn.rank.slice(0, 3).filter((id) => (sn.d[id] || 0) > 0);
+    Music.sfx("fanfare");
+    stage.innerHTML = `<div class="question">${head(`${esc(RB.title)} · ${RB.races > 1 ? `Race ${st.i + 1} ` : ""}result`)}
+      <div class="podium-race">${[1, 0, 2].map((i) => { const id = top[i]; return id ? `<div class="pr p${i + 1}" style="--c:${["#ffd166", "#c0c6d4", "#d08a4b"][i]}"><span class="medal">${["🥇", "🥈", "🥉"][i]}</span><b>${pflag(id)} ${esc(pname(id))}</b><span>${sn.fin.includes(id) ? "🏁 finished" : sn.d[id] + " pts"} · +${fmt(RB.prizes[i] || 0)}</span></div>` : ""; }).join("")}</div>
+      <div class="fact">${sn.fin.length ? `🏁 ${sn.fin.length} ${sn.fin.length === 1 ? "horse" : "horses"} reached the finishing post.` : "⏱ Time's up! Nobody made it to the post — the leaders take the prizes."} Everyone scores ${RB.perPoint} pts for every step their horse moved.</div>
+      ${miniBoard()}</div>`;
+  }
+
+  /* ---------------- Off the Wall ---------------- */
+  const wb = (id) => (S.wb[id] || (S.wb[id] = { b: 0, c: 0, w: 0 }));
+  const redCount = (w) => Math.min(3, 1 + Math.floor(w / 2));     // everyone gets at least one red ball
+  function wallEnter(st) {
+    const W = C.wall, now = Date.now();
+    S.wb = S.wb || {}; S.wsign = S.wsign || {};
+    if (st.k === "intro" && !S.wallStarted) { S.wb = {}; S.wsign = {}; }
+    if (st.k === "wallq") { S.wallStarted = true; S.ans = {}; S.qStart = now; S.deadline = now + W.seconds * 1000; }
+    if (st.k === "walldrop") {
+      if (!S.scored[S.step]) {
+        S.scored[S.step] = true;
+        const q = W.questions[st.i], elig = {}, counts = [0, 0, 0];
+        Object.values(S.ans).forEach((a) => { if (a.v >= 0 && a.v < 3) counts[a.v]++; });
+        Object.keys(S.players).forEach((id) => { const a = S.ans[id]; if (a && a.v === q.answer) { wb(id).c++; elig[id] = null; } else wb(id).w++; });
+        S.snap[S.step] = { phase: Object.keys(elig).length ? "choose" : "done", elig, drops: {}, counts };
+      }
+      S.wd = S.snap[S.step];
+      if (S.wd.phase === "fall") S.wd.phase = "done";
+      if (S.wd.phase === "choose") S.deadline = now + W.zoneSeconds * 1000;
+    }
+    if (st.k === "wallcon") S.deadline = now + W.contractSeconds * 1000;
+    if (st.k === "wallred") {
+      if (!S.scored[S.step]) {
+        S.scored[S.step] = true; S.deltas = {};
+        const res = {}, ids = Object.keys(S.players); let maxEnd = 0;
+        ids.forEach((id, n) => {
+          const p = wb(id), reds = [];
+          for (let k = 0; k < redCount(p.w); k++) {
+            const z = Wall.hash(`${S.room}:${S.step}:${id}:z${k}`) % 7, path = Wall.path(z, `${S.room}:${S.step}:${id}:r${k}`, W.values);
+            const delay = Math.min(2500, n * 90) + k * 900; maxEnd = Math.max(maxEnd, delay);
+            reds.push([z, path.slot, path.value, delay]);
+          }
+          const loss = reds.reduce((a, r) => a + r[2], 0), after = Math.max(0, p.b - loss);
+          const signed = !!S.wsign[id], g = p.c * W.perCorrect, pay = signed ? g : after;
+          res[id] = { reds, b: p.b, loss, after, signed, g, pay, c: p.c };
+          addPoints(id, pay, "wall");
+        });
+        S.snap[S.step] = { res, fallAt: now + 2300, end: now + 2300 + maxEnd + Wall.FALL_MS, deltas: S.deltas };
+      }
+      const sn = S.snap[S.step];
+      S.holdUntil = Math.max(0, sn.end + 400);           // phones keep scores hidden until the reds have landed
+    }
+  }
+  function wallView(st) {
+    const W = C.wall, now = Date.now(), v = { n: (st.i || 0) + 1, of: W.questions.length, per: W.perCorrect };
+    const bank = () => Object.fromEntries(Object.keys(S.players).map((id) => [id, (S.wb[id] || {}).b || 0]));
+    if (st.k === "wallq" || st.k === "walldrop") { const q = W.questions[st.i]; v.q = q.q; v.options = q.options; }
+    if (st.k === "walldrop" && S.wd) {
+      v.answer = W.questions[st.i].answer; v.phase = S.wd.phase; v.zones = S.wd.elig; v.bank = bank();
+      if (S.wd.phase !== "choose") { v.drops = S.wd.drops; v.fallIn = (S.wd.fallAt || now) - now; }
+    }
+    if (st.k === "wallcon") {
+      v.bank = bank(); v.c = {}; v.reds = {};
+      Object.keys(S.players).forEach((id) => { const p = S.wb[id] || { c: 0, w: 0 }; v.c[id] = p.c; v.reds[id] = redCount(p.w); });
+      v.signed = Object.values(S.wsign).filter(Boolean).length;
+    }
+    if (st.k === "wallred") { const sn = S.snap[S.step] || {}; v.res = sn.res || {}; v.fallIn = (sn.fallAt || now) - now; }
+    return v;
+  }
+  /* ---- the Wall on the big screen ---- */
+  function wallCanvas() {
+    const c = $("#wallCv"); if (!c) return null;
+    const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+    const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W: r.width, H: r.height };
+  }
+  function zoneCounts() {
+    if (!S.wd || cur().k !== "walldrop") return null;
+    const c = new Array(7).fill(0); Object.values(S.wd.elig).forEach((z) => { if (z != null) c[z]++; }); return c;
+  }
+  function drawWallIdle() {
+    const cv = wallCanvas(); if (!cv) return;
+    Wall.draw(cv.ctx, cv.W, cv.H, C.wall.values, wallFx ? wallFx.balls : [], Date.now(), { zoneCounts: zoneCounts(), lit: wallFx ? wallFx.lit : null });
+  }
+  function playWallBalls(balls, onLand, onDone) {
+    const fx = (wallFx = { balls, lit: {}, landed: new Set() });
+    let lastClack = 0, lastPing = 0;
+    const loop = () => {
+      if (wallFx !== fx) return;
+      const now = Date.now();
+      balls.forEach((b, i) => {
+        if (!fx.landed.has(i) && now - b.start >= Wall.FALL_MS) {
+          fx.landed.add(i); fx.lit[b.slot] = b.color;
+          if (now - lastPing > 90) { Music.sfx("ping"); lastPing = now; }
+          onLand && onLand(b);
+        }
+      });
+      if (now - lastClack > 120 && balls.some((b) => now >= b.start && now - b.start < Wall.FALL_MS)) { Music.sfx("peg"); lastClack = now; }
+      drawWallIdle();
+      if (fx.landed.size < balls.length) wallRaf = requestAnimationFrame(loop); else onDone && onDone();
+    };
+    loop();
+  }
+  const initials = (id) => pname(id).split(/\s+/).map((w) => w[0] || "").join("").slice(0, 2).toUpperCase();
+  const wallLayout = (left) => `<div class="wallgame"><div class="wall-left">${left}</div><div class="wall-right"><canvas id="wallCv" class="wallcv"></canvas></div></div>`;
+  const wallOpts = (q, answer, counts) => `<div class="opts wopts">${q.options.map((o, i) => `<div class="opt o${i}${answer == null ? "" : i === answer ? " right" : " wrong"}"><span class="ol">${answer === i ? "✓" : "ABC"[i]}</span><span class="otext">${esc(o)}</span>${counts ? `<span class="ocount">${counts[i]}</span>` : ""}</div>`).join("")}</div>`;
+
+  function vWallQ() {
+    const st = cur(), W = C.wall, q = W.questions[st.i];
+    Music.play("think", true);
+    stage.innerHTML = `<div class="question">${head(`${esc(W.title)} · Q${st.i + 1}/${W.questions.length}`, answered("in"))}
+      ${wallLayout(`<h2 class="qtext wq">${esc(q.q)}</h2>${wallOpts(q)}
+        <p class="detail">Right = a <b class="gball">green ball</b> down the Wall · Wrong = a <b class="rball">red ball</b> at the end!</p>`)}</div>`;
+    requestAnimationFrame(drawWallIdle);
+  }
+  function vWallDrop() {
+    const st = cur(), W = C.wall, q = W.questions[st.i], wd = S.wd;
+    const right = Object.keys(wd.elig).length, total = (wd.counts || []).reduce((a, b) => a + b, 0);
+    Music.stop(0.3);
+    stage.innerHTML = `<div class="question">${head(`${esc(W.title)} · Q${st.i + 1}/${W.questions.length}`, `${wd.phase === "choose" ? timerHtml() : ""}<span class="answered" id="wdPicked"></span>`)}
+      ${wallLayout(`<h2 class="qtext wq">${esc(q.q)}</h2>${wallOpts(q, q.answer, wd.counts)}<div id="wdInfo" class="wdinfo"></div>`)}</div>`;
+    Music.sfx(right ? "ding" : "buzz");
+    if (wd.phase === "done" && Object.keys(wd.drops).length) {
+      wallFx = { balls: dropBalls(), lit: {}, landed: new Set() };
+      wallFx.balls.forEach((b) => (wallFx.lit[b.slot] = b.color)); wallFx.balls.forEach((b) => (b.start = 0));
+    }
+    requestAnimationFrame(() => { drawWallIdle(); wallInfo(); });
+  }
+  function dropBalls() {
+    return Object.entries(S.wd.drops).map(([id, d]) => ({ steps: Wall.path(d[0], `${S.room}:${S.step}:${id}`).steps, slot: d[1], value: d[2], start: S.wd.fallAt + d[3], color: "#06d6a0", label: initials(id), id }));
+  }
+  function wallInfo() {
+    const wd = S.wd, el = $("#wdInfo"); if (!el || !wd) return;
+    const right = Object.keys(wd.elig).length, picked = Object.values(wd.elig).filter((z) => z != null).length;
+    const pk = $("#wdPicked"); if (pk) pk.innerHTML = wd.phase === "choose" ? `<b>${picked}</b>/${right} picked` : "";
+    if (!right) { el.innerHTML = `<div class="fact">😱 Nobody got it right — red balls all round!</div>`; return; }
+    if (wd.phase === "choose") { el.innerHTML = `<div class="fact">✅ <b>${right}</b> got it right — pick your drop zone on your phone!</div>`; return; }
+    if (wd.phase === "fall") { el.innerHTML = `<div class="fact">🟢 Here they come…</div>`; return; }
+    const hits = Object.entries(wd.drops).sort((a, b) => b[1][2] - a[1][2]).slice(0, 4);
+    const lead = Object.entries(S.wb).filter(([id]) => S.players[id]).sort((a, b) => b[1].b - a[1].b).slice(0, 5);
+    el.innerHTML = `<div class="fact">🎯 ${hits.length > 1 ? "Top drops" : "The drop"}: ${hits.map(([id, d]) => `${pflag(id)} <b>${esc(pname(id))}</b> ${fmt(d[2])}`).join(" · ")}</div>
+      <div class="banks"><span class="mini-label">Bank leaders</span>${lead.map(([id, p], i) => `<span>${i + 1}. ${pflag(id)} ${esc(pname(id))} <b>${fmt(p.b)}</b></span>`).join("")}</div>`;
+  }
+  function wallTick() {
+    const wd = S.wd; if (!wd) return;
+    if (wd.phase === "choose") {
+      const rem = Math.max(0, S.deadline - Date.now()), total = C.wall.zoneSeconds * 1000;
+      const tn = $("#tnum"), ring = $("#tring");
+      if (tn) tn.textContent = Math.ceil(rem / 1000);
+      if (ring) { ring.style.strokeDashoffset = (276.5 * (1 - Math.min(1, rem / total))).toFixed(1); ring.classList.toggle("hot", rem <= 3000); }
+      wallInfo(); drawWallIdle();
+      if (rem <= 0) startFall();
+    }
+  }
+  /* works out where every green ball lands and banks it (once) */
+  function creditDrops() {
+    const W = C.wall, wd = S.wd; if (!wd || wd.credited) return;
+    wd.credited = true; wd.fallAt = Date.now() + 500;
+    Object.keys(wd.elig).forEach((id, n) => {
+      let z = wd.elig[id]; if (z == null) { z = Wall.hash(`${S.room}:${S.step}:${id}:auto`) % 7; wd.elig[id] = z; }   // didn't pick → random zone
+      const p = Wall.path(z, `${S.room}:${S.step}:${id}`, W.values);
+      wd.drops[id] = [z, p.slot, p.value, Math.min(2400, n * 110)];
+      wb(id).b += p.value;
+    });
+  }
+  function startFall() {
+    const wd = S.wd; if (!wd || wd.phase !== "choose") return;
+    creditDrops();
+    wd.phase = "fall"; S.deadline = 0; save(); pub(true);
+    const tm = $(".timer"); if (tm) tm.style.visibility = "hidden";
+    wallInfo();
+    playWallBalls(dropBalls(), null, () => { wd.phase = "done"; save(); pub(true); wallInfo(); Music.sfx("applause"); });
+  }
+  function vWallCon() {
+    const W = C.wall, ids = Object.keys(S.players);
+    Music.play("think", true);
+    stage.innerHTML = `<div class="question">${head(`${esc(W.title)} · The Contract`, answered("decided"))}
+      <div class="contract">
+        <div class="paper"><div class="seal">✍️</div><h2>THE CONTRACT</h2>
+          <p><b>Sign it</b> and walk away with <b>${fmt(W.perCorrect)} points for every question you got right</b> — guaranteed.</p>
+          <p><b>Tear it up</b> and keep your bank… but first, your <b class="rball">red balls</b> drop down the Wall.</p>
+          <p class="hint">One red ball for everyone, plus one more for every two wrong answers.</p></div>
+        <div class="con-side"><div class="con-big">🤔</div><p>Decide on your phone.<br>Nobody will know until the reds have dropped…</p></div>
+      </div></div>`;
+  }
+  function vWallRed() {
+    const W = C.wall, sn = S.snap[S.step] || { res: {} };
+    Music.stop(0.2);
+    stage.innerHTML = `<div class="question">${head(`${esc(W.title)} · Red balls & the payout`)}
+      ${wallLayout(`<h2 class="qtext wq">🔴 Here come the red balls…</h2><div id="wrInfo" class="wdinfo"><div class="fact">Every red ball takes its slot's value off your bank. Did you sign?</div></div>`)}</div>`;
+    const balls = [];
+    Object.entries(sn.res).forEach(([id, r]) => r.reds.forEach((rd, k) => balls.push({ steps: Wall.path(rd[0], `${S.room}:${S.step}:${id}:r${k}`).steps, slot: rd[1], value: rd[2], start: sn.fallAt + rd[3], color: "#ef476f", label: initials(id), id })));
+    const reveal = () => {
+      const rows = Object.entries(sn.res).filter(([id]) => S.players[id]).sort((a, b) => b[1].pay - a[1].pay);
+      const signed = rows.filter(([, r]) => r.signed), wise = signed.filter(([, r]) => r.g >= r.after).length;
+      const torn = rows.filter(([, r]) => !r.signed), brave = torn.filter(([, r]) => r.after > r.g).length;
+      const el = $("#wrInfo"); if (!el) return;
+      $(".wq").textContent = "🧾 The Contract reveal";
+      el.innerHTML = `<div class="contract-table">${rows.slice(0, 8).map(([id, r]) => `<div class="crow"><span class="cname">${pflag(id)} ${esc(pname(id))}</span><span class="cdec ${r.signed ? "s" : "t"}">${r.signed ? "✍️ signed" : "🔥 tore it up"}</span><span class="cbank">${fmt(r.b)} → ${fmt(r.after)}</span><b>+${fmt(r.pay)}</b></div>`).join("")}</div>
+        ${rows.length > 8 ? `<p class="lb-more">+ ${rows.length - 8} more on your phones</p>` : ""}
+        <div class="fact">✍️ ${signed.length} signed — ${wise} of them were right to! · 🔥 ${torn.length} tore it up — ${brave} beat the contract!</div>`;
+      Music.sfx("fanfare"); Music.sfx("applause");
+    };
+    if (Date.now() >= sn.end) { wallFx = { balls, lit: {}, landed: new Set() }; balls.forEach((b) => { wallFx.lit[b.slot] = b.color; b.start = 0; }); requestAnimationFrame(() => { drawWallIdle(); reveal(); }); return; }
+    Music.sfx("drumroll");
+    requestAnimationFrame(drawWallIdle);
+    later(() => playWallBalls(balls, null, () => later(reveal, 500)), Math.max(0, sn.fallAt - Date.now() - 50));
+  }
+
   /* ---------------- leaderboard & finale ---------------- */
   function vBoard() {
     const st = cur(), r = ranked(S.players);
     Music.play("board", false, "lobby");
-    const nextG = C.order[C.order.indexOf(st.g) + 1];
+    const nextG = st.backup ? null : C.order[C.order.indexOf(st.g) + 1];
     const show = r.slice(0, 10);
     stage.innerHTML = `<div class="board">
       <h1 class="board-title">Leaderboard <small>after ${esc(C[st.g].title)}</small></h1>
@@ -670,7 +1076,7 @@
         </div>
         <div class="card"><h3>🌍 Battle of the Nations</h3>${countryBars(S.players)}</div>
       </div>
-      <p class="next-up">${nextG ? `Next up: <b>${esc(C[nextG].title)}</b>` : "Next up: <b>The Grand Finale</b> 🏆"}</p></div>`;
+      <p class="next-up">${st.backup ? "Next up: <b>back to the show</b> 🎬" : nextG ? `Next up: <b>${esc(C[nextG].title)}</b>` : "Next up: <b>The Grand Finale</b> 🏆"}</p></div>`;
   }
 
   function vFinal() {
@@ -689,7 +1095,7 @@
       </div>
       <div id="finalExtra" class="hidden">
         ${champ ? `<div class="champ">Nation champions: ${champ.flag} <b>${esc(champ.name)}</b>!</div>` : ""}
-        <div class="awards">${C.order.map((g) => award(g, ...({ cards: ["Card Sharp", "🃏"], translate: ["Polyglot Prize", "🗣️"], price: ["Bargain Hunter", "🏷️"], derby: ["Lucky Punter", "🏇"], fortunes: ["Survey Whisperer", "📋"] }[g] || [C[g].title, "⭐"]))).join("")}</div>
+        <div class="awards">${gamesPlayed().map((g) => award(g, ...({ cards: ["Card Sharp", "🃏"], translate: ["Polyglot Prize", "🗣️"], price: ["Bargain Hunter", "🏷️"], derby: ["Lucky Punter", "🏇"], fortunes: ["Survey Whisperer", "📋"], rollball: ["Golden Arm", "🎯"], wall: ["Wall Whisperer", "🧱"] }[g] || [C[g].title, "⭐"]))).join("")}</div>
         <p class="thanks">Thank you · Danke · ¡Gracias! · Thanks y'all! 👋</p>
       </div></div>`;
     const show = (i, d) => later(() => { const el = stage.querySelector(`.pod[data-r="${i}"]`); if (el) { el.classList.remove("hidden"); Music.sfx("ding"); } }, d);
@@ -772,25 +1178,28 @@
     if (!S) return;
     syncSound();
     const st = cur();
-    if (S.deadline && (st.k === "q" || st.k === "pick")) {
-      const total = (st.k === "pick" ? C.derby.pickSeconds : game().seconds) * 1000;
+    if (st.k === "walldrop") wallTick();
+    if (S.deadline && ["q", "pick", "wallq", "wallcon"].includes(st.k)) {
+      const total = (st.k === "pick" ? C.derby.pickSeconds : st.k === "wallcon" ? C.wall.contractSeconds : game().seconds) * 1000;
       const rem = Math.max(0, S.deadline - Date.now()), sec = Math.ceil(rem / 1000);
       const tn = $("#tnum"), ring = $("#tring");
       if (tn) tn.textContent = sec;
       if (ring) { ring.style.strokeDashoffset = (276.5 * (1 - Math.min(1, rem / total))).toFixed(1); ring.classList.toggle("hot", sec <= 5); }
       if (sec !== lastSec) { lastSec = sec; if (sec <= 5 && sec > 0 && !S.allIn) Music.sfx("tick"); }
-      if (rem <= 0 && st.k === "q" && !autoTimer) {
+      if (rem <= 0 && ["q", "wallq", "wallcon"].includes(st.k) && !autoTimer) {
         Music.stop(0.2); Music.sfx(S.allIn ? "reveal" : "buzz");   // buzzer only when time actually ran out
-        autoTimer = setTimeout(() => { autoTimer = null; if (cur().k === "q") next(); }, 1300);
+        const k0 = st.k; autoTimer = setTimeout(() => { autoTimer = null; if (cur().k === k0) next(); }, 1300);
       }
       if (rem <= 0 && st.k === "pick" && !autoTimer) { autoTimer = setTimeout(() => { autoTimer = null; if (cur().k === "pick") next(); }, 800); }
     }
+    if (st.k === "roll") rollTick();
     // show clock
     const ck = $("#ctlClock");
     if (ck) {
       const el = S.showStart ? (Date.now() - S.showStart) / 60000 : 0;
       let state = "";
-      if (st.k !== "lobby") {
+      if (st.backup) state = " 🎲 bonus";
+      else if (st.k !== "lobby") {
         let due = 0;
         if (st.k === "final") due = 40;
         else for (const g of C.order) { due += PLAN[g]; if (g === st.g) break; }
@@ -807,15 +1216,18 @@
     const sel = $("#ctlJump"); if (!sel) return;
     sel.value = String(S.step);
     $("#ctlPrev").disabled = S.step === 0;
-    $("#ctlNext").disabled = S.step === steps.length - 1;
+    $("#ctlNext").disabled = cur().k === "final";
   }
   function buildControls() {
     const sel = $("#ctlJump");
-    sel.innerHTML = steps.map((s, i) => {
+    const opt = (s, i) => {
       const g = s.g ? C[s.g].title : "";
-      const lbl = { lobby: "Lobby", intro: "▶ " + g, q: s.g === "cards" ? `    Row ${cardPos(s.i)[0] + 1} · card ${cardPos(s.i)[1] + 1}` : `    Q${s.i + 1}`, reveal: s.g === "cards" ? `    Row ${cardPos(s.i)[0] + 1} · flip ${cardPos(s.i)[1] + 2}` : `    Q${s.i + 1} reveal`, pick: `    Race ${s.i + 1} betting`, race: `    Race ${s.i + 1}`, result: `    Race ${s.i + 1} result`, board: "    ★ Leaderboard", final: "🏆 Grand finale" }[s.k];
+      const lbl = { lobby: "Lobby", intro: (s.backup ? "🎲 " : "▶ ") + g, q: s.g === "cards" ? `    Row ${cardPos(s.i)[0] + 1} · card ${cardPos(s.i)[1] + 1}` : `    Q${s.i + 1}`, reveal: s.g === "cards" ? `    Row ${cardPos(s.i)[0] + 1} · flip ${cardPos(s.i)[1] + 2}` : `    Q${s.i + 1} reveal`, pick: `    Race ${s.i + 1} betting`, race: `    Race ${s.i + 1}`, result: `    Race ${s.i + 1} result`, roll: `    Race ${s.i + 1}`, rollres: `    Race ${s.i + 1} result`, wallq: `    Q${s.i + 1}`, walldrop: `    Q${s.i + 1} drop`, wallcon: "    ✍️ The Contract", wallred: "    🔴 Red balls & payout", board: "    ★ Leaderboard", final: "🏆 Grand finale" }[s.k];
       return `<option value="${i}">${esc(lbl)}</option>`;
-    }).join("");
+    };
+    const fi = steps.findIndex((x) => x.k === "final");
+    sel.innerHTML = steps.slice(0, fi + 1).map(opt).join("") +
+      (fi < steps.length - 1 ? `<optgroup label="Backup games (pick one to play it)">${steps.slice(fi + 1).map((s, j) => opt(s, fi + 1 + j)).join("")}</optgroup>` : "");
     const unfocus = () => document.activeElement && document.activeElement.blur && document.activeElement.blur();
     sel.onchange = () => { go(+sel.value, +sel.value >= S.step ? 1 : -1); unfocus(); };
     $("#ctlNext").onclick = () => { Music.init(); next(); unfocus(); };
@@ -861,7 +1273,7 @@
       else if (e.key === "f" || e.key === "F") (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
     });
     let rz = null;
-    window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { fitStage(); updateChipMore(); }, 120); });
+    window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { fitStage(); updateChipMore(); drawWallIdle(); }, 120); });
   }
 
   /* ---------------- boot ---------------- */

@@ -66,7 +66,7 @@
     if (!$("#jRoom").value) $("#jRoom").focus();
   }
 
-  let ticker = null;
+  let ticker = null, joinRetry = null;
   function connect() {
     if (T && T.room !== me.room) { location.reload(); return; }   // switching rooms: start clean
     if (!T) {
@@ -78,6 +78,10 @@
       <p class="hint">Make sure the host's screen is open.</p><button class="btn ghost small" id="changeRoom">Wrong room or name?</button></div>`;
     $("#changeRoom").onclick = () => { store.removeItem("tssi-player"); location.href = location.pathname; };
     if (!ticker) ticker = setInterval(timerTick, 250);
+    // keep knocking until the host has us (covers lost messages and a host that opens late)
+    if (!joinRetry) joinRetry = setInterval(() => {
+      if (me && T && (!S || !S.lb.some((r) => r[0] === me.id)) && Date.now() - lastJoin > 3000) sendJoin();
+    }, 1000);
   }
   function sendJoin() { lastJoin = Date.now(); T.send({ t: "join", id: me.id, name: me.name, country: me.country }); }
   const send = (m) => T.send(Object.assign({ id: me.id, step: S ? S.step : -1 }, m));
@@ -93,7 +97,7 @@
     const inGame = s.lb.some((r) => r[0] === me.id);
     if (!inGame && Date.now() - lastJoin > 2500) sendJoin();
     const stepChanged = s.step !== lastStep;
-    S = s;
+    S = s; S._rcv = Date.now();
     deadline = s.rem ? Date.now() + s.rem : 0;
 
     // Hold back reveal results so phones don't spoil the big screen's drumroll
@@ -111,16 +115,21 @@
       local = loadLocal(s.step);
       const prev = loadLocal(s.step - 1);
       // reveal/race/result screens need what I did on the step before (my answer, my horse)
-      if (["reveal", "race", "result"].includes(s.k) && !local.carried) {
+      if (["reveal", "race", "result", "walldrop"].includes(s.k) && !local.carried) {
         local.prev = { v: prev.v, list: prev.list };
         local.pick = prev.pick; local.carried = true; saveLocal();
       }
       if (["intro", "q", "pick", "race"].includes(s.k)) showBoard = false; // never hide a live question behind the scoreboard
       clearInterval(cheerTimer); cheerTimer = null;
+      stopRoll(); cancelAnimationFrame(wallAnim); wallPhase = null;
       render();
       if (!holding) resultBeep();
     } else if (!(holding && wasHolding)) {
       updateHeader(); resendIfMissing();
+      if (s.k === "race" && !showBoard) updateRaceMini();
+      if (s.k === "roll" && !showBoard) updateRoll();
+      if (s.k === "walldrop" && !showBoard && (s.view || {}).phase !== wallPhase) renderBody();
+      if (s.k === "wallcon" && !showBoard) { const sc = $("#wcSigned"); if (sc) sc.textContent = (s.view || {}).signed || 0; }
       if (showBoard || ["lobby", "board", "final", "intro"].includes(s.k)) renderBody();
     } else resendIfMissing();
   }
@@ -144,10 +153,14 @@
 
   function resendIfMissing() {
     if (!S || !S.got) return;
-    if ((S.k === "q" || S.k === "pick") && Date.now() > deadline - 300) return;
+    if (["q", "pick", "wallq", "wallcon"].includes(S.k) && Date.now() > deadline - 300) return;
     const g = S.got[me.id] || 0;
     if (S.k === "intro" && local.v != null && !g) send({ t: "vote", v: local.v });
     if (S.k === "pick" && local.pick != null && !g) send({ t: "pick", v: local.pick });
+    if (S.k === "roll" && (local.rn || 0) > g) sendRoll(true);
+    if (S.k === "wallq" && local.v != null && !g) send({ t: "answer", v: local.v });
+    if (S.k === "walldrop" && local.z != null && !g && (S.view || {}).phase === "choose") send({ t: "zone", v: local.z });
+    if (S.k === "wallcon" && local.sign != null && !g) send({ t: "sign", v: local.sign });
     if (S.k === "q") {
       if (S.g === "fortunes") {
         const list = local.list || [];
@@ -190,7 +203,8 @@
   function timerBar() { return `<div class="ptimer" role="timer"><i id="ptbar"></i><span id="ptnum"></span></div>`; }
   function timerTick() {
     const bar = $("#ptbar"), num_ = $("#ptnum"); if (!bar || !S) return;
-    const total = S.k === "pick" ? C.derby.pickSeconds * 1000 : ((C[S.g] && C[S.g].seconds) || 20) * 1000;
+    const total = S.k === "pick" ? C.derby.pickSeconds * 1000 : S.k === "walldrop" ? C.wall.zoneSeconds * 1000 : S.k === "wallcon" ? C.wall.contractSeconds * 1000 : ((C[S.g] && C[S.g].seconds) || 20) * 1000;
+    if (S.k === "roll") updateRoll();
     const rem = Math.max(0, deadline - Date.now());
     bar.style.width = Math.min(100, (rem / total) * 100) + "%";
     bar.classList.toggle("hot", rem <= 5000);
@@ -220,7 +234,7 @@
       return;
     }
     const v = S.view || {}, k = S.k, g = S.g;
-    if (Date.now() < holdUntil) {
+    if (Date.now() < holdUntil && g !== "wall") {
       b.innerHTML = `<div class="card center hold"><div class="big">👀</div><h2>Eyes on the big screen…</h2><p class="hint">${k === "final" ? "Drumroll please! 🥁" : "The answer's being revealed now."}</p><div class="dots"><i></i><i></i><i></i></div></div>`;
       return;
     }
@@ -352,6 +366,8 @@
       clearInterval(cheerTimer); cheerTimer = null;
       const h = local.pick != null ? v.horses[local.pick] : null;
       b.innerHTML = `<div class="card center">${h ? `<div class="tag">You backed</div><h2 class="backed" style="color:${h.color}">${esc(h.name)}</h2>` : "<h3>You didn't back a horse this time — enjoy the race!</h3>"}
+        <div class="mtrack">${v.horses.map((x, i) => `<div class="mlane${local.pick === i ? " mine" : ""}" style="--c:${x.color}"><span class="mnum">${i + 1}</span><span class="mh" id="mh${i}">🏇</span></div>`).join("")}<i class="mfin"></i></div>
+        <p class="mpos" id="mpos">${h ? "Waiting for the off…" : ""}</p>
         <button id="cheer" class="cheer" style="--c:${h ? h.color : "#ffd166"}" ${h ? "" : "disabled"}>📣<br>CHEER!</button>
         <p class="hint">${h ? "Tap tap tap! Your cheers give your horse a boost." : "Back a horse in the next race to cheer it on."}</p><div id="cc" class="cc">${local.c ? fmt(local.c) : ""}</div></div>`;
       if (h) {
@@ -368,6 +384,29 @@
         const every = Math.max(1000, S.lb.length * 25);
         cheerTimer = setInterval(() => { if (cheers > 0) send({ t: "cheer", n: Math.min(40, cheers) }); cheers = 0; saveLocal(); }, every);
       }
+      updateRaceMini();
+    }
+    else if (k === "roll") renderRoll(b, v);
+    else if (k === "wallq") {
+      b.innerHTML = `${timerBar()}<div class="card"><div class="tag">🧱 Off the Wall · Q${v.n}/${v.of}</div><h3>${esc(v.q)}</h3></div>
+        <div class="abcd">${v.options.map((o, i) => `<button class="abtn a${i} lockable${local.v === i ? " on" : ""}" data-i="${i}" ${local.v != null ? "disabled" : ""}><b>${"ABC"[i]}</b><span>${esc(o)}</span></button>`).join("")}</div>
+        <p class="hint center" id="lockMsg">${local.v != null ? "🔒 Locked in! Fingers crossed…" : "Right = a green ball down the Wall 🟢 · Wrong = a red one later 🔴"}</p>`;
+      b.querySelectorAll(".abtn").forEach((btn) => (btn.onclick = () => {
+        if (local.v != null) return;
+        local.v = +btn.dataset.i; saveLocal(); send({ t: "answer", v: local.v }); beep("pop");
+        b.querySelectorAll(".abtn").forEach((x) => { x.disabled = true; x.classList.toggle("on", x === btn); });
+        $("#lockMsg").textContent = "🔒 Locked in! Fingers crossed…";
+      }));
+    }
+    else if (k === "walldrop") renderWallDrop(b, v);
+    else if (k === "wallcon") renderContract(b, v);
+    else if (k === "wallred") renderWallRed(b, v);
+    else if (k === "rollres") {
+      const place = (v.rank || []).indexOf(me.id) + 1, dist = (v.d || {})[me.id] || 0, fin = (v.fin || []).includes(me.id);
+      b.innerHTML = `<div class="card center"><div class="tag">${esc(C.rollball.title)} · result</div>
+        <div class="myrank">${place ? "#" + place : "—"}<small> of ${(v.rank || []).length}</small></div>
+        <p>${fin ? "🏁 Your horse reached the finishing post!" : `Your horse moved ${dist} of ${v.finish} steps`}</p>
+        ${deltaHtml}</div>`;
     }
     else if (k === "result") {
       const o = v.order || [];
@@ -384,6 +423,156 @@
         ${k === "final" ? '<p class="center thanks-p">Thank you · Danke · ¡Gracias! · Thanks y\'all! 👋</p>' : ""}`;
     }
     timerTick();
+  }
+
+  /* ---------- Desk Derby: live mini-race on the phone ---------- */
+  function updateRaceMini() {
+    const v = S.view || {}; if (!v.pos) return;
+    v.pos.forEach((p, i) => { const el = $("#mh" + i); if (el) el.style.setProperty("--x", Math.min(1, p).toFixed(3)); });
+    const mp = $("#mpos"); if (!mp || local.pick == null) return;
+    const order = v.pos.map((p, i) => i).sort((a, b) => { const fa = v.order.indexOf(a), fb = v.order.indexOf(b); return (fa < 0 ? 99 : fa) - (fb < 0 ? 99 : fb) || v.pos[b] - v.pos[a]; });
+    const pl = order.indexOf(local.pick) + 1, nth = ["1st", "2nd", "3rd", "4th", "5th", "6th"][pl - 1];
+    mp.textContent = v.order.includes(local.pick) ? `🏁 Your horse finished ${nth}!` : pl === 1 ? "🔥 Your horse is LEADING!" : `Your horse is running ${nth} — keep cheering!`;
+  }
+
+  /* ---------- The Fairground Derby: roll-a-ball lane ---------- */
+  let lane = null, rollSendTimer = null, lastSentN = 0;
+  function stopRoll() { if (lane) { lane.destroy(); lane = null; } clearInterval(rollSendTimer); rollSendTimer = null; }
+  function sendRoll(force) {
+    if (!local.rn || (!force && local.rn === lastSentN)) return;
+    lastSentN = local.rn; send({ t: "roll", total: local.rt || 0, n: local.rn });
+  }
+  function renderRoll(b, v) {
+    stopRoll();
+    if (v.rid && local.rid !== v.rid) { local.rid = v.rid; local.rt = 0; local.rn = 0; lastSentN = 0; saveLocal(); }   // a fresh (or re-run) race
+    b.innerHTML = `${timerBar()}<div class="card rollcard">
+        <div class="rbme"><span>${flag(me.country)} <b>${esc(myName())}</b></span><span id="rbRank" class="rbrankp"></span></div>
+        <div class="rbprog"><i id="rbBar"></i><span class="rbh" id="rbH">🏇</span><span class="rbpost">🏁</span></div>
+        <div class="rbstat"><span><b id="rbPts">0</b> / ${v.finish} steps</span><span id="rbLast" class="rblast"></span></div>
+        <div class="lanewrap"><canvas id="rbLane" class="rblane off"></canvas><div id="rbCover" class="rbcover">Get ready…</div></div>
+        <p class="hint center" id="rbHint">Flick the ball <b>upwards</b> — gently for a 1, harder for a 2 or 3!</p></div>`;
+    lane = RollBall.mount($("#rbLane"), (pts) => {
+      local.rt = (local.rt || 0) + pts; local.rn = (local.rn || 0) + 1; saveLocal();
+      const last = $("#rbLast");
+      if (last) { last.textContent = pts ? `+${pts}!` : "Missed — go again!"; last.className = "rblast " + (pts ? "p" + pts : "miss"); }
+      beep(pts >= 2 ? "ding" : pts ? "pop" : "buzz");
+      updateRoll();
+    });
+    lane.onHint = () => { const h = $("#rbHint"); if (h) { h.textContent = "👆 Flick UP the lane — swipe from the bottom towards the holes!"; h.classList.add("warn-txt"); } };
+    rollSendTimer = setInterval(() => sendRoll(false), 800);
+    updateRoll();
+  }
+  function updateRoll() {
+    const v = S.view || {}, fin = v.finish || 40, mine = Math.min(fin, local.rt || 0);
+    const host = (v.d || {})[me.id] || 0, shown = Math.max(mine, host);
+    const bar = $("#rbBar"), hh = $("#rbH"), pts = $("#rbPts");
+    if (bar) bar.style.width = (shown / fin) * 100 + "%";
+    if (hh) hh.style.setProperty("--x", (shown / fin).toFixed(3));
+    if (pts) pts.textContent = shown;
+    const place = (v.rank || []).indexOf(me.id) + 1, rk = $("#rbRank");
+    const finished = (v.fin || []).includes(me.id) || mine >= fin;
+    if (rk) rk.textContent = place ? `#${place} of ${v.rank.length}` : "";
+    const cover = $("#rbCover"), live = !v.done && !finished && Date.now() >= (S._rcv || 0) + (v.go || 0);
+    if (lane) lane.enable(live);
+    if (cover) {
+      const goIn = Math.ceil(((S._rcv || Date.now()) + (v.go || 0) - Date.now()) / 1000);
+      cover.hidden = live;
+      const fp = (v.fin || []).indexOf(me.id), ftxt = fp >= 0 && fp < 3 ? " " + ["1st", "2nd", "3rd"][fp] : "";
+      cover.textContent = v.done ? "🏁 Race over!" : finished ? `🏁 You finished${ftxt}! Watch the big screen` : goIn > 0 ? `Get ready… ${goIn}` : "";
+    }
+  }
+
+  /* ---------- Off the Wall ---------- */
+  let wallAnim = 0, wallPhase = null;
+  const wallCanvasHtml = () => `<div class="pwallwrap"><canvas id="pWall" class="pwall"></canvas></div>`;
+  function phoneWall(balls, opts, onDone) {
+    cancelAnimationFrame(wallAnim);
+    const c = $("#pWall"); if (!c) return;
+    const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = c.clientHeight;
+    c.width = W * dpr; c.height = H * dpr;
+    const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const lit = {}, landed = new Set(); let lastClack = 0;
+    const loop = () => {
+      const now = Date.now();
+      balls.forEach((bl, i) => { if (!landed.has(i) && now - bl.start >= Wall.FALL_MS) { landed.add(i); lit[bl.slot] = bl.color; if (bl.start > S._rcv - 500) beep(bl.red ? "buzz" : "ding"); } });
+      if (sound && now - lastClack > 160 && balls.some((bl) => now >= bl.start && now - bl.start < Wall.FALL_MS)) { try { Music.sfx("peg"); } catch (e) {} lastClack = now; }
+      Wall.draw(ctx, W, H, C.wall.values, balls, now, Object.assign({ lit }, opts));
+      if (landed.size < balls.length) wallAnim = requestAnimationFrame(loop); else onDone && onDone();
+    };
+    loop();
+  }
+  function renderWallDrop(b, v) {
+    wallPhase = v.phase;
+    const mine = me.id in (v.zones || {}), bank = (v.bank || {})[me.id] || 0, ans = v.options[v.answer];
+    if (!mine) {
+      b.innerHTML = `<div class="card center"><div class="tag">🧱 Q${v.n}/${v.of}</div><h3>${esc(v.q)}</h3>
+        <div class="answer">✅ ${esc(ans)}</div><p class="verdict">${local.prev && local.prev.v != null ? "❌ Not this time…" : "⏰ You didn't answer."}</p>
+        <p>A <b class="rball">red ball</b> is heading your way at the end 😬</p><p class="hint">🏦 Your bank: <b>${fmt(bank)}</b></p></div>`;
+      return;
+    }
+    if (v.phase === "choose") {
+      if (local.z == null && v.zones[me.id] != null) local.z = v.zones[me.id];
+      b.innerHTML = `${timerBar()}<div class="card center"><div class="tag">✅ Correct! · ${esc(ans)}</div>
+        <h3>Pick your drop zone</h3>
+        <div class="zones">${[0, 1, 2, 3, 4, 5, 6].map((z) => `<button class="zbtn lockable${local.z === z ? " on" : ""}" data-z="${z}">${z + 1}</button>`).join("")}</div>
+        ${wallCanvasHtml()}
+        <p class="hint" id="lockMsg">${local.z != null ? `🔒 Zone ${local.z + 1} — watch the Wall!` : "Middle zones are steady · edges are a gamble!"}</p></div>`;
+      const draw = () => phoneWall([], { zone: local.z });
+      b.querySelectorAll(".zbtn").forEach((btn) => (btn.onclick = () => {
+        local.z = +btn.dataset.z; saveLocal(); send({ t: "zone", v: local.z }); beep("pop");
+        b.querySelectorAll(".zbtn").forEach((x) => x.classList.toggle("on", x === btn));
+        $("#lockMsg").textContent = `🔒 Zone ${local.z + 1} — watch the Wall!`; draw();
+      }));
+      // the zone numbers on the wall itself are tappable too
+      const cv = $("#pWall");
+      if (cv) cv.onclick = (e) => {
+        const r = cv.getBoundingClientRect(), slot = Math.floor(((e.clientX - r.left) / r.width) * Wall.SLOTS), z = slot - 4;
+        if (z >= 0 && z < 7 && (e.clientY - r.top) < r.height * 0.15) { const btn = b.querySelector(`.zbtn[data-z="${z}"]`); if (btn && !btn.disabled) btn.click(); }
+      };
+      requestAnimationFrame(draw);
+      return;
+    }
+    const d = (v.drops || {})[me.id];
+    if (!d) { b.innerHTML = `<div class="card center"><h3>🟢 Balls are dropping — eyes on the big screen!</h3></div>`; return; }
+    b.innerHTML = `<div class="card center"><div class="tag">🟢 Your ball · zone ${d[0] + 1}</div>${wallCanvasHtml()}<div id="wdRes" class="wdres"><p class="hint">Falling…</p></div></div>`;
+    const start = S._rcv + (v.fallIn || 0) + d[3];
+    const ball = { steps: Wall.path(d[0], `${S.room}:${S.step}:${me.id}`).steps, slot: d[1], start, color: "#06d6a0", mine: true };
+    const show = () => { const r = $("#wdRes"); if (r) r.innerHTML = `<div class="pdelta ${d[2] >= 400 ? "plus" : ""}">+${fmt(d[2])}</div><p>🏦 Your bank: <b>${fmt(bank)}</b></p><p class="hint">Banked for now — the red balls come at the end!</p>`; };
+    requestAnimationFrame(() => phoneWall([ball], { zone: d[0] }, show));
+  }
+  function renderContract(b, v) {
+    const bank = (v.bank || {})[me.id] || 0, c = (v.c || {})[me.id] || 0, reds = (v.reds || {})[me.id] || 1, g = c * v.per;
+    b.innerHTML = `${timerBar()}<div class="card center paperp"><div class="tag">✍️ The Contract</div>
+        <div class="cstats"><div><small>Your bank</small><b>${fmt(bank)}</b></div><div><small>Red balls coming</small><b class="rball">${"🔴".repeat(reds)}</b></div></div>
+        <p>You got <b>${c}</b> right, so the contract guarantees you <b>${fmt(g)} points</b>.</p>
+        <div class="conbtns">
+          <button class="conbtn sign lockable${local.sign === true ? " on" : ""}" data-v="1">✍️ SIGN<small>take ${fmt(g)} guaranteed</small></button>
+          <button class="conbtn tear lockable${local.sign === false ? " on" : ""}" data-v="0">🔥 TEAR IT UP<small>keep my ${fmt(bank)}… minus the reds</small></button>
+        </div>
+        <p class="hint" id="lockMsg">${local.sign == null ? "If you don't choose, you keep your bank." : local.sign ? "✍️ Signed! You can still change your mind." : "🔥 Torn up! You can still change your mind."}</p>
+        <p class="hint">Signed so far: <b id="wcSigned">${v.signed || 0}</b></p></div>`;
+    b.querySelectorAll(".conbtn").forEach((btn) => (btn.onclick = () => {
+      local.sign = btn.dataset.v === "1"; saveLocal(); send({ t: "sign", v: local.sign }); beep("pop");
+      b.querySelectorAll(".conbtn").forEach((x) => x.classList.toggle("on", x === btn));
+      $("#lockMsg").textContent = local.sign ? "✍️ Signed! You can still change your mind." : "🔥 Torn up! You can still change your mind.";
+    }));
+  }
+  function renderWallRed(b, v) {
+    const r = (v.res || {})[me.id];
+    if (!r) { b.innerHTML = `<div class="card center"><h3>🔴 Red balls are dropping — eyes on the big screen!</h3></div>`; return; }
+    b.innerHTML = `<div class="card center"><div class="tag">🔴 Your red ball${r.reds.length > 1 ? "s" : ""}</div>${wallCanvasHtml()}<div id="wrRes" class="wdres"><p class="hint">🏦 Bank before: <b>${fmt(r.b)}</b></p></div></div>`;
+    const t0 = S._rcv + (v.fallIn || 0);
+    const balls = r.reds.map((rd, k) => ({ steps: Wall.path(rd[0], `${S.room}:${S.step}:${me.id}:r${k}`).steps, slot: rd[1], start: t0 + rd[3], color: "#ef476f", red: true, mine: true }));
+    const show = () => {
+      const el = $("#wrRes"); if (!el) return;
+      const verdict = r.signed ? (r.g >= r.after ? "Smart move — the contract beat your bank! 👏" : "Ooh — your bank would have paid more! 😅")
+                               : (r.after >= r.g ? "Brave — and it paid off! 🔥" : "Ouch — the contract would have paid more! 😬");
+      el.innerHTML = `<p>Reds took <b class="rball">−${fmt(r.loss)}</b> · bank ${fmt(r.b)} → <b>${fmt(r.after)}</b></p>
+        <p>You <b>${r.signed ? "✍️ signed" : "🔥 tore up"}</b> the contract (worth ${fmt(r.g)}).</p>
+        <div class="pdelta plus">+${fmt(r.pay)} pts</div><p class="verdict">${verdict}</p>`;
+      updateHeader();
+    };
+    requestAnimationFrame(() => phoneWall(balls, {}, show));
   }
 
   /* ---------- boot ---------- */

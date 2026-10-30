@@ -172,7 +172,7 @@ window.CONTENT = {
   },
 
   /* ---------------------------------------------------------------
-     GAME 4 — GLOBAL FORTUNES  ("We asked 100 colleagues…")
+     WORK FAMILY FORTUNES  ("We asked 100 colleagues… our survey said!")
      Each player types up to 3 answers. You score 10 × the survey
      number for every answer that's on the board.
      TIP: run a 1-question MS Form in advance and replace these with
@@ -181,8 +181,8 @@ window.CONTENT = {
      and German welcome). Matching is forgiving of small typos.
      --------------------------------------------------------------- */
   fortunes: {
-    title: "Global Fortunes",
-    tagline: "We asked 100 colleagues… Survey says!",
+    title: "Work Family Fortunes",
+    tagline: "We asked 100 colleagues… our survey said!",
     jingle: "fortunes",
     rules: [
       "We surveyed colleagues across 🇬🇧 🇺🇸 🇩🇪 🇨🇷",
@@ -235,7 +235,74 @@ window.CONTENT = {
     ]
   },
 
-  /* Running order. Remove or reorder games here.
-     "translate" (Lost in Translation) is still available — add it back to use it. */
-  order: ["cards", "price", "derby", "fortunes"]
+  /* ---------------------------------------------------------------
+     THE FAIRGROUND DERBY  (roll-a-ball horse race)
+     Everyone gets their own horse. Flick a ball up the lane on your
+     phone: holes score 1, 2 or 3 and every point moves your horse.
+     First 3 past the post win prizes; everyone also scores 10 pts per
+     step their horse moved. Race ends when 3 horses finish or time's up.
+     --------------------------------------------------------------- */
+  rollball: {
+    title: "The Fairground Derby",
+    tagline: "Roll up, roll up! Roll the ball, race your horse!",
+    jingle: "fair",
+    rules: [
+      "Everyone gets their own horse 🏇",
+      "Flick the ball up the lane — holes score 1, 2 or 3",
+      "Every point moves your horse. First past the post wins!"
+    ],
+    poll: {
+      q: "Best fairground treat?",
+      options: ["🇬🇧 Candyfloss", "🇺🇸 Corn dog", "🇩🇪 Gebrannte Mandeln", "🇨🇷 Churchill (shaved ice)"]
+    },
+    finish: 40,        // points needed to reach the finishing post
+    seconds: 75,       // the race stops after this, even if nobody has finished
+    races: 1,
+    prizes: [1500, 1000, 700],   // 1st, 2nd, 3rd past the post
+    perPoint: 10                 // everyone: points for every step their horse moved
+  },
+
+  /* ---------------------------------------------------------------
+     OFF THE WALL  (inspired by "The Wall")
+     Answer right → pick a drop zone and a GREEN ball falls down the
+     wall into a slot (adds to your bank). Wrong/no answer → you owe a
+     RED ball. Before the reds drop, everyone secretly signs the
+     CONTRACT (guaranteed points per correct answer) or tears it up
+     (keep the bank, minus what the red balls take).
+     --------------------------------------------------------------- */
+  wall: {
+    title: "Off the Wall",
+    tagline: "Answer right, drop the ball… and pray!",
+    jingle: "wall",
+    rules: [
+      "Answer right → pick a zone and drop a GREEN ball down the Wall",
+      "Wrong answers earn RED balls — they fall at the end and take points away",
+      "The Contract: sign for guaranteed points, or tear it up and keep your bank?"
+    ],
+    poll: {
+      q: "Who'd survive best behind the Wall?",
+      options: ["🇬🇧 The Brits", "🇺🇸 The Americans", "🇩🇪 The Germans", "🇨🇷 The Ticos"]
+    },
+    seconds: 15,        // time to answer each question
+    zoneSeconds: 8,     // time to pick a drop zone
+    contractSeconds: 20,
+    perCorrect: 250,    // the contract: guaranteed points for each correct answer
+    // the 15 slots at the bottom of the Wall (left → right). Big values sit right next to tiny ones!
+    values: [1, 200, 40, 800, 5, 400, 1, 1000, 1, 400, 5, 800, 40, 200, 1],
+    questions: [
+      { q: "Which German city is home to Oktoberfest?", options: ["Berlin", "Munich", "Hamburg"], answer: 1 },
+      { q: "How many days of paid holiday is a full-time UK worker legally entitled to each year (including bank holidays)?", options: ["20 days", "25 days", "28 days"], answer: 2 },
+      { q: "Costa Rica famously abolished its army — in which year?", options: ["1948", "1968", "1989"], answer: 0 },
+      { q: "How many time zones does the mainland USA (the 'lower 48') span?", options: ["3", "4", "5"], answer: 1 },
+      { q: "In the UK the last letter of the alphabet is “zed”. What is it in the US?", options: ["Zee", "Zed", "Zett"], answer: 0 }
+    ]
+  },
+
+  /* Running order of the main show. Remove or reorder games here. */
+  order: ["cards", "wall", "fortunes", "rollball"],
+
+  /* Backup games: not played unless you pick one from the host's Jump menu
+     ("Backup games" at the bottom). After a backup game's leaderboard,
+     Next takes you back to where you left the show. */
+  backups: ["derby", "price", "translate"]
 };
