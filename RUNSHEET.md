@@ -38,58 +38,78 @@ Remove silly names by clicking them. When the count stops rising, press **Next**
 
 ---
 
-## 13:00 – 22:00 · Round 2 — The Price is Bright (9 min)
-🎵 Brassy showtime fanfare.
+## 13:00 – 22:00 · Round 2 — Off the Wall (9 min)
+🎵 Big dramatic build, then thinking music under each question; peg clatter as the balls fall.
 
-**Intro** — vote: *Which nation has the best bargain hunters?*
-> *"Come on down! You're the next contestants on THE PRICE IS BRIGHT! Closest without going over wins 1,000 points — hit it bang on for 2,000. And remember — go over and you get nothing!"*
+**Intro** — vote: *Who'd survive best behind the Wall?*
+> *"Right then, this is a proper one. Behind me — THE WALL. Answer the question right and you get to drop a green ball from any zone, one to seven. Wherever it lands, that's what goes in your bank. A grand right in the middle — sat next to a measly ONE. Get it wrong though… and you're owed a RED ball. And they come at the end."* (Channel your inner Danny Dyer.)
 
-**6 items × ~75 s** — 25 s to type a price. The reveal plays a **drumroll**, flips the price tag, then lists the closest guesses (OVER! in red).
-> On the Mini/iPhone pair: *"Spot the coincidence — £497 in 1959, $499 in 2007!"*
-> On the Golf in Deutsche Mark: *"German colleagues, you have home advantage — or do you?"*
+**5 questions (~1½ min each):**
+1. **Question** (15 s, three options) — closes early once everyone's in.
+2. **The drop** — the answer is revealed; everyone who got it right picks a **drop zone** on their phone (8 s; no pick = a random zone). The zone counts show above the Wall: *"Look at that — half of you have gone for zone 4!"* Then all the green balls tumble down together with players' initials on them. Phones replay **their own ball**.
+3. **Big drops & bank leaders** appear on the left: *"Lena — straight into the thousand! Get in!"*
 
-**Leaderboard.**
+**✍️ The Contract (20 s)** — everyone secretly chooses on their phone:
+- **Sign it** → 250 points for every question they got right, guaranteed.
+- **Tear it up** → keep their bank… after their red balls drop (one for everyone, plus one more for every two wrong answers).
+> *"Now… the contract. Do you trust the Wall? Sign it and take the safe money — or rip it up and keep your bank. Nobody knows what anyone's done until those reds come down."*
 
----
-
-## 22:00 – 32:00 · Round 3 — The Desk Derby (10 min)
-🎵 Original bugle "call to the post", then a galloping race theme.
-
-**Intro** — vote: *Royal Ascot, Kentucky Derby, the Deutsches Derby or El Tope in San José?*
-> *"Ladies and gentlemen, hats on — it's DERBY DAY! Six runners, two races. Back a horse; longer odds pay out bigger. And during the race — MASH that cheer button. The louder your cheering, the faster your horse… a bit."*
-
-**Each race (~4 min):**
-1. **Betting** (20 s) — runners show odds and live backer counts. *"Payroll Thunder at 8/1 — nobody trusts payroll!"*
-2. **Race** — 3-2-1, starting gun, ~15 s of racing with live commentary on screen. Commentate over it! Lanes glow when backers cheer.
-3. **Result** — podium, payouts, and the 📣 Loudest in the grandstand.
+**🔴 Red balls & the payout** — drumroll, then everyone's red balls fall. The **Contract reveal** shows who signed, who tore it up, banks before → after, and the payout: *"Brad signed for a thousand… his bank would've paid sixteen hundred! Ohhh, Brad!"*
 
 **Leaderboard.**
 
 ---
 
-## 32:00 – 42:00 · Round 4 — Global Fortunes (10 min)
+## 22:00 – 32:00 · Round 3 — Work Family Fortunes (10 min)
 🎵 Dramatic game-show build.
 
 **Intro** — vote: *Fish & chips, Burger, Currywurst or Casado?*
 > *"We asked 100 colleagues across the UK, US, Germany and Costa Rica… Type up to three answers — English, Deutsch or Español, we'll understand you. 10 points for every person who said the same thing!"*
 
 **4 questions × ~2 min** — 40 s to answer. The board flips answers from #6 up to #1, showing how many of you got each, then the biggest **✖ Not on the board** answer with a buzzer.
-> *"Survey says…!"* before you press Next is mandatory. 😉
+> *"Our survey said…!"* before you press Next is mandatory. 😉
+
+**Leaderboard.**
+
+---
+
+## 32:00 – 40:00 · Round 4 — The Fairground Derby (8 min)
+🎵 Fairground organ waltz, then a quiet organ loop during the race.
+
+**Intro** — vote: *Best fairground treat — Candyfloss, Corn dog, Gebrannte Mandeln or a Churchill?*
+> *"Roll up, roll up! It's THE FAIRGROUND DERBY! Everyone's got their OWN horse this time. On your phone there's a ball and a lane full of holes — flick it up the lane: the yellow holes score 1, blue 2, and that little red one at the top scores 3. Every point moves your horse. First past the post wins 1,500!"*
+> Tip to share: *"Gentle flick for the near holes — a firm flick for the 3 at the top. Too hard and it bounces off the back!"*
+
+**The race (~1–1½ min)** — 3-2-1-ROLL! The big screen shows the leading 8 horses; lanes swap places as people overtake. 🎯 *"Priya +3"* and 🏁 *"Brad finishes 1st!"* pop up bottom-right. The race stops when 3 horses finish or after 75 s (press **Next** to stop it early).
+> *"Look at the Germans go! Who's going to catch Jürgen?"*
+
+**Result** — podium for the first three past the post, and everyone scores 10 pts per step their horse moved.
 
 **Leaderboard** — *"One more screen… the Grand Finale!"*
 
 ---
 
-## 42:00 – 45:00 · Grand Finale (3 min)
+## 40:00 – 43:00 · Grand Finale (3 min)
 🎵 Drumroll → 3rd place → drumroll → 2nd → drumroll → 🏆 1st, with victory fanfare, applause and confetti.
 - Announce the **Nation Champions** (highest *average*, so every office can win).
-- Read the awards: 🗣️ Polyglot Prize · 🏷️ Bargain Hunter · 🏇 Lucky Punter · 📋 Survey Whisperer.
+- Read the awards: 🃏 Card Sharp · 🧱 Wall Whisperer · 📋 Survey Whisperer · 🎯 Golden Arm (plus 🏇 Lucky Punter / 🏷️ Bargain Hunter / 🗣️ Polyglot Prize if you played a backup game).
 
 > *"Thank you, danke schön, ¡muchas gracias! and thanks y'all! Same time next month — and we'll have a new set of questions. Send us your ideas!"*
 
 ---
 
+## 🎲 Backup games (any time)
+Open the **Jump** menu → *Backup games* at the bottom:
+- **🎲 The Desk Derby** (~9 min) — *"Hats on — it's DERBY DAY!"* Bet on one of six horses (20 s), then mash CHEER: 📣 name bubbles float up from the horses, the crowd roars, FINAL FURLONG! and photo finishes; phones show a live mini-race. 2 races, payouts by the odds.
+- **🎲 The Price is Bright** (~8 min) — *"Come on down! Closest without going over wins 1,000 points — bang on for 2,000!"* 6 items, 25 s each, drumroll reveal.
+- **🎲 Lost in Translation** (~8 min) — quick-fire quiz on UK/US/German/Costa Rican words, speed bonus.
+
+They play as a **BONUS ROUND**. After the bonus leaderboard, **Next** takes you straight back to where you left the show. Use one if a game won't load, if you're running early, or if the room wants more.
+
+---
+
 ### Timing tips
-- Running long? Use **Jump to** to skip to the next round intro, or skip Race 2.
+- Running long? Use **Jump to** to skip to the next round intro.
+- Running short (finishing before 40 min)? Slot in a 🎲 backup game before the Grand Finale.
 - Running short? Let people chat on the leaderboard screens.
 - Want it longer? Add questions in `js/content.js`.
